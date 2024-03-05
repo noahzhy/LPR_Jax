@@ -1,3 +1,5 @@
+import os, sys, glob, itertools
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -64,3 +66,40 @@ def center_fit(img, w, h, inter=cv2.INTER_NEAREST, top_left=True):
         new_img[start_h:start_h+img_h, start_w:start_w+img_w, :] = img
 
     return new_img
+
+
+# ctc greedy decoder
+# group same label and remove blank
+def ctc_greedy_decoder(logits, blank=0):
+    logits = jnp.argmax(logits, axis=-1)
+    return [int(k) for k, _ in itertools.groupby(logits) if k != blank]
+
+
+# test unit for ctc greedy decoder
+def test_ctc_greedy_decoder():
+    logits = jnp.array([
+        [0.1, 0.2, 0.3, 0.4, 0.5],
+        [0.5, 0.4, 0.3, 0.2, 0.1],
+        [0.1, 0.2, 0.3, 0.7, 0.5],
+        [0.5, 0.4, 0.3, 0.8, 0.1],
+        [0.7, 0.3, 0.3, 0.3, 0.3],
+    ])
+    print(ctc_greedy_decoder(logits))
+    print('[pass] ctc_greedy_decoder')
+
+
+def names2dict(file_path):
+    with open(file_path, "r") as f:
+        lines = f.readlines()
+    return {i: c for i, c in enumerate([l.strip() for l in lines])}
+
+
+if __name__ == "__main__":
+    import jax
+    jax.config.update("jax_platform_name", "cpu")
+
+    test_ctc_greedy_decoder()
+
+    # data/labels.name
+    dict_ = names2dict(os.path.join("data", "labels.name"))
+    print(dict_)

@@ -5,7 +5,6 @@ import optax
 from tqdm import tqdm
 import jax.numpy as jnp
 import tensorboardX as tbx
-import jax_dataloader as jdl
 from flax.training import train_state
 from flax.training import checkpoints
 
@@ -47,8 +46,10 @@ class TrainState(train_state.TrainState):
     def test_step(self, batch):
         x, y = batch
         logits = self.apply_fn(self.params, x)
-        accuracy = jnp.mean(jnp.argmax(logits, axis=-1) == y)
-        return accuracy
+        # ctc greedy decoder
+
+        # accuracy = jnp.mean(jnp.argmax(logits, axis=-1) == y)
+        # return accuracy
 
     def fit(self, train_ds, test_ds, epochs=10, lr_fn=None):
         tbx_writer = tbx.SummaryWriter("logs/{}".format(self.log_name))

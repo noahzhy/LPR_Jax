@@ -1,4 +1,4 @@
-import time
+import time, timeit
 from time import perf_counter
 
 import jax
@@ -15,34 +15,36 @@ def ctc_loss(logits, targets, blank_id=0):
         labels=targets,
         logit_paddings=logits_padding,
         label_paddings=labels_padding,
-    )
+    ).mean()
 
 
 @jax.jit
 def focal_ctc_loss(logits, targets, blank_id=0, alpha=0.25, gamma=2):
     loss = ctc_loss(logits, targets, blank_id)
     fc_loss = alpha * (1 - jnp.exp(-loss)) ** gamma * loss
-    return fc_loss.mean()
+    return fc_loss
 
 
 def focal_ctc_loss_test():
-    logits = jnp.ones((4, 16, 127))
     labels = jnp.array([
-        [1,2,2,4,5,0,0,0],
-        [6,2,1,1,7,7,5,0],
-        [1,2,2,0,0,0,0,0],
-        [3,2,1,2,0,0,0,0],
+        #0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F
+        # [1,2,7,5,5,8,5,3,3,2,4,4,0,1,0,4],
+        [6,2,1,1,7,7,5,8,9,3,6,3,4,8,1],
+        [9,0,4,0,1,0,2,0,4,0,8,0,9,0,8],
+        [9,0,4,0,2,0,2,0,4,0,8,0,9,0,8],
     ])
-
+    tmp = jnp.linspace(0, 1, labels.shape[1]*10).reshape(labels.shape[1], -1)
+    logits = jnp.array([tmp, tmp, tmp])
     loss = 0
-    start_time = time.perf_counter()
+    # timeit and get function result
+    start_t = perf_counter()
     for i in range(1000):
-        loss = focal_ctc_loss(logits, labels, blank_id=0)
-
-    end_time = time.perf_counter()
-    avg_time = (end_time - start_time) / 1000
-    return loss, avg_time
-
+        loss = focal_ctc_loss(logits, labels)
+    end_t = perf_counter()
+    avg_time = (end_t - start_t) / 1000
+    print('\33[92m[pass]\33[00m focal_ctc_loss() test passed.')
+    print('\t\33[92m[loss]\33[00m', loss)
+    print('\t\33[92m[time]\33[00m {:.6f} ms'.format(avg_time*1000))
 
 # dice bce loss via optax
 @jax.jit
@@ -73,12 +75,14 @@ def dice_bce_test():
         loss = dice_bce_loss(logits, targets)
     end_t = perf_counter()
     avg_time = (end_t - start_t) / 1000
-    return loss, avg_time
+    print('\33[92m[pass]\33[00m dice_bce_loss() test passed.')
+    print('\t\33[92m[loss]\33[00m', loss)
+    print('\t\33[92m[time]\33[00m {:.6f} ms'.format(avg_time*1000))
 
 
 if __name__ == "__main__":
     jax.config.update("jax_platform_name", "cpu")
     print(jax.devices())
 
-    print(dice_bce_test())
-    print(focal_ctc_loss_test())
+    dice_bce_test()
+    focal_ctc_loss_test()
