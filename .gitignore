@@ -1,8 +1,7 @@
 checkpoints/
 logs/
 data/*/
-model_test.py
-quantized.tflite
+model.tflite
 
 test.ipynb
 
