@@ -39,6 +39,19 @@ def test_insert_zeros():
     print("\033[92m[pass]\033[00m insert_zeros() test passed.")
 
 
+# jax jit to grayscale
+@jax.jit
+def to_grayscale(image):
+    """
+    Converts an image to grayscale.
+    Args:
+        image: A 3D array representing the image.
+    Returns:
+        A new 3D array representing the grayscale image.
+    """
+    return pix.rgb_to_grayscale(image)
+
+
 # jax.jit image scaling and keep aspect ratio
 @jax.jit
 def scale_image(image, size=(64, 128), method='bilinear'):
@@ -110,13 +123,18 @@ if __name__ == "__main__":
     test_insert_zeros()
 
     # load image
-    img_raw = load_image(glob.glob('data/val/*.jpg')[1])
-    for i in range(15):
+    _path = random.choice(glob.glob('data/val/*.jpg'))
+    img_raw = load_image(_path)
+    for i in range(20):
         key = jax.random.split(key)[0]
         img = augment_image(img_raw, key)
+        img = to_grayscale(img)
         img = scale_image(img)
         img = jnp.clip(img * 255, 0, 255).astype(jnp.uint8)
-        plt.imsave(f'logs/images/{i}.jpg', img)
+        # save grayscale image via matplotlib
+        img = img[..., 0]
+        # save grayscale image
+        plt.imsave(f'logs/images/{i}.jpg', img, cmap='gray')
 
     print('done')
 
