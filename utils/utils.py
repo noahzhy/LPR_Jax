@@ -3,6 +3,7 @@ import os, sys, glob, itertools
 import cv2
 import numpy as np
 from PIL import Image
+import jax
 import jax.numpy as jnp
 
 
@@ -101,5 +102,5 @@ if __name__ == "__main__":
     test_ctc_greedy_decoder()
 
     # data/labels.name
-    dict_ = names2dict(os.path.join("data", "labels.name"))
+    dict_ = names2dict(os.path.join("data", "labels.names"))
     print(dict_)

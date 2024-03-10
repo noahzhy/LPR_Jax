@@ -5,6 +5,7 @@ import jax
 import optax
 import jax.numpy as jnp
 
+
 # ctc loss
 @jax.jit
 def ctc_loss(logits, targets, blank_id=0):
@@ -29,7 +30,7 @@ def focal_ctc_loss_test():
     labels = jnp.array([
         #0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F
         # [1,2,7,5,5,8,5,3,3,2,4,4,0,1,0,4],
-        [6,2,1,1,7,7,5,8,9,3,6,3,4,8,1],
+        [6,2,1,1,7,7,5,8,0,0,0,0,0,0,0],
         [9,0,4,0,1,0,2,0,4,0,8,0,9,0,8],
         [9,0,4,0,2,0,2,0,4,0,8,0,9,0,8],
     ])
@@ -43,8 +44,8 @@ def focal_ctc_loss_test():
     end_t = perf_counter()
     avg_time = (end_t - start_t) / 1000
     print('\33[92m[pass]\33[00m focal_ctc_loss() test passed.')
-    print('\t\33[92m[loss]\33[00m', loss)
-    print('\t\33[92m[time]\33[00m {:.6f} ms'.format(avg_time*1000))
+    print('  - loss:', loss)
+    print('  - time: {:.6f} ms'.format(avg_time*1000))
 
 # dice bce loss via optax
 @jax.jit
@@ -76,8 +77,8 @@ def dice_bce_test():
     end_t = perf_counter()
     avg_time = (end_t - start_t) / 1000
     print('\33[92m[pass]\33[00m dice_bce_loss() test passed.')
-    print('\t\33[92m[loss]\33[00m', loss)
-    print('\t\33[92m[time]\33[00m {:.6f} ms'.format(avg_time*1000))
+    print('  - loss:', loss)
+    print('  - time: {:.6f} ms'.format(avg_time*1000))
 
 
 if __name__ == "__main__":

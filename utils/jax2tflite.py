@@ -52,15 +52,21 @@ def jax2tflite(key, model, input_shape, dataset, save_path='model.tflite',
 
     converter.allow_custom_ops = True
     converter.experimental_new_converter = True
+    converter.experimental_new_quantizer = True
     converter.representative_dataset = dataset
     converter.target_spec.supported_ops = [
-        tf.lite.OpsSet.TFLITE_BUILTINS,
         tf.lite.OpsSet.TFLITE_BUILTINS_INT8,
-        tf.lite.OpsSet.SELECT_TF_OPS,
+        # tf.lite.OpsSet.EXPERIMENTAL_TFLITE_BUILTINS_ACTIVATIONS_INT16_WEIGHTS_INT8,
+        # tf.lite.OpsSet.TFLITE_BUILTINS,
+        # tf.lite.OpsSet.SELECT_TF_OPS,
     ]
     converter.inference_input_type = inference_input_type
     converter.inference_output_type = inference_output_type
-    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    converter.optimizations = [
+        tf.lite.Optimize.DEFAULT,
+        # tf.lite.Optimize.OPTIMIZE_FOR_SIZE,
+        # tf.lite.Optimize.OPTIMIZE_FOR_LATENCY,
+    ]
 
     with open('{}'.format(save_path), 'wb') as f:
         f.write(converter.convert())
@@ -74,6 +80,6 @@ if __name__ == "__main__":
     VAL_DIR = "/Users/haoyu/Downloads/lpr/val"
     val_ds = RepresentativeDataset(VAL_DIR, IMG_SIZE, SAMPLE_SIZE)
 
-    model = TinyLPR(train=False)
+    model = TinyLPR(15, train=False)
     key = jax.random.PRNGKey(0)
     jax2tflite(key, model, IMG_SIZE, val_ds, save_path='model.tflite')

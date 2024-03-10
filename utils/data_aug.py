@@ -7,10 +7,6 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
 
-img_array = jnp.array(pil.open(glob.glob('data/val/*.jpg')[0]))
-print(img_array.shape)
-
-
 # load image from directory
 def load_image(image_path):
     return jnp.array(pil.open(image_path), dtype=jnp.float32) / 255.
@@ -54,7 +50,7 @@ def to_grayscale(image):
 
 # jax.jit image scaling and keep aspect ratio
 @jax.jit
-def scale_image(image, size=(64, 128), method='bilinear'):
+def resize_image(image, size=(64, 128), method='bilinear'):
     """
     Scales an image to the specified size while keeping its aspect ratio.
     Args:
@@ -88,14 +84,14 @@ def augment_image(image, key):
         A new 3D array representing the augmented image.
     """
     _bright = .5
-    _contrast = [0.2, 5.]
-    _gamma = [0.2, 2.0]
-    _hue = .1
-    _saturation = [0.1, 2.0]
+    _contrast = [0.1, 1.2]
+    _gamma = [0.1, 1.0]
+    _hue = .2
+    _saturation = [0.1, 1.0]
 
     # k size
     _k = 5
-    _sigma = 5
+    _sigma = 3
 
     _hue = pix.random_hue(key, image, _hue)
     _brightness = pix.random_brightness(key, image, _bright)
@@ -115,6 +111,8 @@ def augment_image(image, key):
 
     # jax random choice and apply
     image = jax.random.choice(key, aug_fn)
+    image = to_grayscale(image)
+    image = jnp.clip(image, 0, 1)
     return image
 
 
@@ -124,14 +122,14 @@ if __name__ == "__main__":
 
     # load image
     _path = random.choice(glob.glob('data/val/*.jpg'))
+    # _path = 'data/val/6907.jpg'
     img_raw = load_image(_path)
     for i in range(20):
         key = jax.random.split(key)[0]
         img = augment_image(img_raw, key)
-        img = to_grayscale(img)
-        img = scale_image(img)
-        img = jnp.clip(img * 255, 0, 255).astype(jnp.uint8)
+        img = resize_image(img)
         # save grayscale image via matplotlib
+        img = jnp.clip(img * 255, 0, 255).astype(jnp.uint8)
         img = img[..., 0]
         # save grayscale image
         plt.imsave(f'logs/images/{i}.jpg', img, cmap='gray')

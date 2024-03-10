@@ -181,7 +181,7 @@ class TinyLPR(nn.Module):
         x = self.backbone(inputs)
         mat, attn = self.attention(x)
         dense = self.dense(mat)
-        ctc = nn.softmax(dense)
+        ctc = nn.log_softmax(dense)
 
         if self.train:
             attn = UpSample(up_repeat=3)(attn)
