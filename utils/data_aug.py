@@ -1,13 +1,13 @@
 import os, sys, random, time, glob
 
 import jax
+import numpy as np
 import dm_pix as pix
 import PIL.Image as pil
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
 
-# load image from directory
 def load_image(image_path):
     return jnp.array(pil.open(image_path), dtype=jnp.float32) / 255.
 
@@ -38,39 +38,51 @@ def test_insert_zeros():
 # jax jit to grayscale
 @jax.jit
 def to_grayscale(image):
-    """
-    Converts an image to grayscale.
-    Args:
-        image: A 3D array representing the image.
-    Returns:
-        A new 3D array representing the grayscale image.
-    """
     return pix.rgb_to_grayscale(image)
 
 
-# jax.jit image scaling and keep aspect ratio
+# jax.jit image resize but not keep aspect ratio
 @jax.jit
-def resize_image(image, size=(64, 128), method='bilinear'):
+def resize_image(image, target_size=(64, 128), method='bilinear'):
     """
     Scales an image to the specified size while keeping its aspect ratio.
     Args:
         image: A 3D array representing the image.
-        size: A tuple representing the target size.
+        target_size: A tuple representing the target size.
     Returns:
         A new 3D array representing the scaled image.
     """
+    _, _, c = image.shape
+    return jax.image.resize(image, (*target_size, c), method=method)
+
+
+# resize and keep aspect ratio
+@jax.jit
+def resize_image_keep_aspect_ratio(image, target_size=(64, 128), method='bilinear'):
+    """
+    Scales an image to the specified size while keeping its aspect ratio.
+    Args:
+        image: A 3D array representing the image.
+        target_size: A tuple representing the target size.
+    Returns:
+        A new 3D array representing the scaled image.
+    """
+    # static target size
     h, w, c = image.shape
-    if h > w * size[0] / size[1]:
-        new_h = size[0]
-        new_w = int(w * new_h / h)
+    th, tw = target_size
+    # calculate aspect ratio
+    aspect = w / h
+    # calculate new size
+    if aspect > tw / th:
+        new_w = tw
+        new_h = int(tw / aspect)
     else:
-        new_w = size[1]
-        new_h = int(h * new_w / w)
-    
+        new_h = th
+        new_w = int(th * aspect)
+    # resize image
     image = jax.image.resize(image, (new_h, new_w, c), method=method)
-    black = jnp.zeros((size[0], size[1], c))
-    black = black.at[:new_h, :new_w, :].set(image)
-    return black
+    image = jnp.pad(image, ((0, th - new_h), (0, tw - new_w), (0, 0)))
+    return image
 
 
 # jax jit pix augmentation
@@ -117,7 +129,10 @@ def augment_image(image, key):
 
 
 if __name__ == "__main__":
-    key = jax.random.PRNGKey(0)
+    # cpu mode
+    jax.config.update('jax_platform_name', 'cpu')
+    key = jax.random.PRNGKey(random.randint(0, 1000))
+
     test_insert_zeros()
 
     # load image
@@ -127,7 +142,7 @@ if __name__ == "__main__":
     for i in range(20):
         key = jax.random.split(key)[0]
         img = augment_image(img_raw, key)
-        img = resize_image(img)
+        img = resize_image_keep_aspect_ratio(img)
         # save grayscale image via matplotlib
         img = jnp.clip(img * 255, 0, 255).astype(jnp.uint8)
         img = img[..., 0]
@@ -135,8 +150,3 @@ if __name__ == "__main__":
         plt.imsave(f'logs/images/{i}.jpg', img, cmap='gray')
 
     print('done')
-
-
-    # # show via matplotlib
-    # plt.imshow(img)
-    # plt.show()
