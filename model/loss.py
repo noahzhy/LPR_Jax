@@ -22,14 +22,12 @@ def ctc_loss(logits, targets, blank_id=0):
 @jax.jit
 def focal_ctc_loss(logits, targets, blank_id=0, alpha=0.25, gamma=2):
     loss = ctc_loss(logits, targets, blank_id)
-    fc_loss = alpha * (1 - jnp.exp(-loss)) ** gamma * loss
-    return fc_loss
+    return alpha * (1 - jnp.exp(-loss)) ** gamma * loss
 
 
 def focal_ctc_loss_test():
     labels = jnp.array([
         #0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F
-        # [1,2,7,5,5,8,5,3,3,2,4,4,0,1,0,4],
         [6,2,1,1,7,7,5,8,0,0,0,0,0,0,0],
         [9,0,4,0,1,0,2,0,4,0,8,0,9,0,8],
         [9,0,4,0,2,0,2,0,4,0,8,0,9,0,8],
@@ -47,34 +45,43 @@ def focal_ctc_loss_test():
     print('  - loss:', loss)
     print('  - time: {:.6f} ms'.format(avg_time*1000))
 
+
 # dice bce loss via optax
 @jax.jit
-def dice_bce_loss(logits, targets, smooth=1e-6):
-    # logits: (B, C, H, W)
-    # targets: (B, C, H, W)
+def dice_bce_loss(logits, targets, smooth=1e-7):
+    # logits: (B, H, W, C), get from sigmoid activation, not raw logits
+    # targets: (B, H, W, C)
     # smooth: (float) smooth value
     # return: (B,)
-    logits = jax.nn.log_softmax(logits)
-    targets = jax.nn.log_softmax(targets)
-    bce = optax.sigmoid_binary_cross_entropy(logits, targets)
-    pred = jax.nn.sigmoid(logits)
-    targets = jax.nn.sigmoid(targets)
-    intersection = jnp.sum(pred * targets, axis=(1, 2, 3))
-    union = jnp.sum(pred, axis=(1, 2, 3)) + jnp.sum(targets, axis=(1, 2, 3))
+
+    # dice loss
+    pred = logits.flatten()
+    true = targets.flatten()
+    intersection = jnp.sum(pred * true)
+    union = jnp.sum(pred) + jnp.sum(true)
     dice = 1 - (2 * intersection + smooth) / (union + smooth)
-    loss = bce + dice
-    # mean loss
-    return jnp.mean(loss)
+
+    # bce loss
+    # clip and log
+    logits = jnp.clip(logits, 1e-7, 1 - 1e-7)
+    logits = jnp.log(logits / (1 - logits))
+    bce = optax.sigmoid_binary_cross_entropy(logits, targets).mean()
+
+    return bce + dice
 
 
 def dice_bce_test():
     # test dice bce loss
-    logits = jnp.array([[[[0.1, 0.2], [0.3, 0.4]], [[0.5, 0.6], [0.7, 0.8]]]])
-    targets = jnp.array([[[[0, 1], [1, 0]], [[0, 1], [1, 0]]]])
+    logits = jnp.zeros((1, 10, 10, 3))
+    logits = logits.at[:, 2:8, 2:8, :].set(1)
+    targets = jnp.zeros((1, 10, 10, 3))
+    targets = targets.at[:, 2:8, 2:8, :].set(1)
+
     start_t = perf_counter()
     for i in range(1000):
         loss = dice_bce_loss(logits, targets)
     end_t = perf_counter()
+
     avg_time = (end_t - start_t) / 1000
     print('\33[92m[pass]\33[00m dice_bce_loss() test passed.')
     print('  - loss:', loss)
