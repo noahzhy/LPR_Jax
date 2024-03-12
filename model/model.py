@@ -203,7 +203,7 @@ class TinyLPR(nn.Module):
 if __name__ == '__main__':
     # cpu mode
     jax.config.update("jax_platform_name", "cpu")
-    model = TinyLPR(time_steps=16, n_class=69, n_feat=64, train=True)
+    model = TinyLPR(time_steps=15, n_class=68, n_feat=64, train=True)
     key = jax.random.PRNGKey(0)
     x = jnp.ones((1, 64, 128, 1))
     print(model.tabulate(key, x))

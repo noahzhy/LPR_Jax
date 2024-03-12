@@ -85,7 +85,7 @@ if __name__ == '__main__':
     demo = TFliteDemo('model.tflite')
 
     # get random image
-    val_path = "/Users/haoyu/Downloads/lpr/val"
+    val_path = "/Users/haoyu/Documents/datasets/lpr/val"
     img_list = random.sample(glob.glob(os.path.join(val_path, '*.jpg')), num_samples)
 
     res_confs = []

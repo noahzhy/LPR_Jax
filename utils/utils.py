@@ -85,8 +85,8 @@ def test_ctc_greedy_decoder():
         [0.5, 0.4, 0.3, 0.8, 0.1],
         [0.7, 0.3, 0.3, 0.3, 0.3],
     ])
-    print(ctc_greedy_decoder(logits))
-    print('[pass] ctc_greedy_decoder')
+    assert ctc_greedy_decoder(logits) == [4, 3]
+    print('\033[92m[pass]\033[00m ctc_greedy_decoder() test passed.')
 
 
 def names2dict(file_path):
