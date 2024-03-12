@@ -3,6 +3,7 @@ logs/
 data/*/
 model.tflite
 
+train_backup.py
 test.ipynb
 
 # Byte-compiled / optimized / DLL files
