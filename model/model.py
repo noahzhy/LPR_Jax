@@ -163,8 +163,8 @@ class Attention(nn.Module):
 
 
 class TinyLPR(nn.Module):
-    time_steps: int = 16
-    n_class: int = 69
+    time_steps: int = 15
+    n_class: int = 68
     n_feat: int = 64
     train: bool = True
 

@@ -1,0 +1,22 @@
+batch_size: 8
+num_workers: 1
+lr: 2.e-3
+warmup: 5
+epochs: 100
+
+# data config
+train_dir: "/Users/haoyu/Documents/datasets/lpr/train"
+val_dir: "/Users/haoyu/Documents/datasets/lpr/val"
+
+# save weight
+keep_ckpts: 3
+
+focal_loss:
+  alpha: 0.25
+  gamma: 2.0
+
+# model config
+time_steps: 15
+n_class: 68
+n_feat: 64
+img_size: [64, 128]

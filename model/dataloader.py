@@ -31,7 +31,7 @@ class LPR_Data(Dataset):
     def __init__(self, key, data_dir, time_step=15, img_size=(64, 128), aug=True):
         self.key = key
         self.time_step = time_step
-        self.img_size = img_size
+        self.img_size = (img_size[0], img_size[1])
         self.imgs = glob.glob(os.path.join(data_dir, '*.jpg'))
         # # keep 1280 only
         # self.imgs = self.imgs[:1280]
