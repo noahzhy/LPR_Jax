@@ -15,42 +15,47 @@ from gen_label import gen_mask
 pad_mask_fn = jax.jit(pad_mask, static_argnums=1)
 resize_fn = jax.jit(resize_image, static_argnums=(1, 2))
 resize_ratio_fn = jax.jit(resize_image_keep_aspect_ratio, static_argnums=(1, 2))
+insert0align2right_fn = jax.jit(insert0align2right, static_argnums=1)
 
 
 def collate_fn(batch):
-    return batch
-    # if isinstance(batch[0], jnp.ndarray):
-        # return jnp.stack(batch[0]), jnp.stack(batch[1]), batch[2]
-    #     return jnp.stack(batch)
-    # elif isinstance(batch[0], (tuple, list)):
-    #     return type(batch[0])(collate_fn(samples) for samples in zip(*batch))
-    # else:
-    #     return jnp.asarray(batch)
+    if isinstance(batch[0], jnp.ndarray):
+        return jnp.stack(batch)
+    elif isinstance(batch[0], (tuple, list)):
+        return type(batch[0])(collate_fn(samples) for samples in zip(*batch))
+    else:
+        return jnp.asarray(batch)
 
 
 class LPR_Data(Dataset):
-    def __init__(self, key, data_dir, img_size=(64, 128), aug=False):
+    def __init__(self, key, data_dir, time_step=15, img_size=(64, 128), aug=True):
+        self.key = key
+        self.time_step = time_step
         self.img_size = img_size
         self.imgs = glob.glob(os.path.join(data_dir, '*.jpg'))
-        self.key = key
+        # # keep 1280 only
+        # self.imgs = self.imgs[:1280]
+        self.aug = aug
 
     def __len__(self):
         return len(self.imgs)
 
     def __getitem__(self, idx):
         img_path = self.imgs[idx]
-        img = load_image(img_path)
-        img = augment_image(img, self.key)
         _mask, label = gen_mask(img_path)
-        # 50 % chance to resize the image with or without keeping aspect ratio
-        if jax.random.bernoulli(self.key, 0.5):
+        img = load_image(img_path)
+
+        if self.aug and jax.random.bernoulli(self.key, 0.5):
+            img = augment_image(img, self.key)
             img = resize_fn(img, self.img_size)
             mask = resize_fn(_mask, self.img_size, method='nearest')
         else:
+            img = to_grayscale(img)
             img = resize_ratio_fn(img, self.img_size)
             mask = resize_ratio_fn(_mask, self.img_size, method='nearest')
 
-        mask = pad_mask_fn(mask, 16)
+        mask = pad_mask_fn(mask, self.time_step)
+        label = insert0align2right_fn(label, self.time_step)
 
         self.key = jax.random.split(self.key)[0]
         return img, mask, label
@@ -72,29 +77,11 @@ def show_augment_image(samples=8):
 
     start_time = time.process_time()
     for batch in dataloader:
-        img, mask, label = batch[0]
-        print(img.shape, mask.shape, len(label))
+        img, mask, label = batch
+        print(img.shape, mask.shape, label.shape)
         break
 
     print(f'elapsed time: {(time.process_time() - start_time) * 1000} ms')
-
-    # sum mask into one channel
-    mask = mask.sum(axis=-1)
-    img = img.squeeze()
-    # show image and mask together
-    fig, axes = plt.subplots(2, 1, figsize=(10, 5))
-    axes[0].imshow(img, cmap='gray')
-    axes[1].imshow(mask, cmap='gray')
-    plt.show()
-
-    # row = int(math.sqrt(samples) - 0.5)
-    # col = samples // row
-    # fig, axes = plt.subplots(row, col, figsize=(10, 5))
-    # for i, ax in enumerate(axes.flatten()):
-    #     ax.imshow(dataloader.dataset[i], cmap='gray')
-    #     ax.axis('off')
-
-    # plt.show()
 
 
 if __name__ == "__main__":
