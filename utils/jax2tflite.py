@@ -8,7 +8,7 @@ from jax.experimental import jax2tf
 sys.path.append("./model")
 sys.path.append("./utils")
 from utils import *
-from model import *
+from model import TinyLPR
 
 
 class RepresentativeDataset:

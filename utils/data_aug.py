@@ -192,8 +192,6 @@ def test_pad_mask():
 
 
 if __name__ == "__main__":
-    # cpu mode
-    jax.config.update('jax_platform_name', 'cpu')
     key = jax.random.PRNGKey(random.randint(0, 1000))
 
     test_pad_mask()

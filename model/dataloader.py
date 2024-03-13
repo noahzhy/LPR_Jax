@@ -28,13 +28,13 @@ def collate_fn(batch):
 
 
 class LPR_Data(Dataset):
-    def __init__(self, key, data_dir, time_step=15, img_size=(64, 128), aug=True):
+    def __init__(self, key, data_dir, time_step=15, img_size=(64, 128), aug=True, **kwargs):
         self.key = key
         self.time_step = time_step
         self.img_size = (img_size[0], img_size[1])
         self.imgs = glob.glob(os.path.join(data_dir, '*.jpg'))
-        # # keep 1280 only
-        # self.imgs = self.imgs[:1280]
+        # # keep 128 only
+        self.imgs = self.imgs[:128]
         self.aug = aug
 
     def __len__(self):
@@ -63,8 +63,7 @@ class LPR_Data(Dataset):
 
 # show data augmentation via matplotlib
 def show_augment_image(samples=8):
-    jax.config.update('jax_platform_name', 'cpu')
-    key = jax.random.PRNGKey(random.randint(0, 1000))
+    key = jax.random.PRNGKey(0)
     data_dir = "/Users/haoyu/Documents/datasets/lpr/val"
     dataset = LPR_Data(key, data_dir)
     dataloader = DataLoader(
@@ -85,7 +84,6 @@ def show_augment_image(samples=8):
 
 
 if __name__ == "__main__":
-    jax.config.update('jax_platform_name', 'cpu')
     key = jax.random.PRNGKey(0)
 
     show_augment_image()
