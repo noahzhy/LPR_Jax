@@ -1,33 +1,28 @@
 import os, sys, random, time
 
 import jax
-# cpu mode
 jax.config.update('jax_platform_name', 'cpu')
 import yaml
-import torch
 import optax
 import jax.numpy as jnp
-
-from model.dataloader import *
-from model.model import TinyLPR
-from model.loss import *
+from torch.utils.data import DataLoader
 
 sys.path.append("./utils")
 from utils import batch_ctc_greedy_decoder, batch_remove_blank
 from fit import lr_schedule, TrainState
+from model.dataloader import *
+from model.model import TinyLPR
+from model.loss import *
 
-
-# load yaml config
-cfg = yaml.safe_load(open("config.yaml"))
-print(cfg)
 
 key = jax.random.PRNGKey(0)
+cfg = yaml.safe_load(open("config.yaml"))
 
-train_dl = torch.utils.data.DataLoader(LPR_Data(key, **cfg["train"]),
-    batch_size=cfg["batch_size"], shuffle=True, num_workers=cfg["num_workers"], collate_fn=collate_fn,)
+train_dl = DataLoader(LPR_Data(key, **cfg["train"]),
+    batch_size=cfg["batch_size"], num_workers=cfg["num_workers"], shuffle=True, collate_fn=collate_fn,)
 
-val_dl = torch.utils.data.DataLoader(LPR_Data(key, **cfg["val"]),
-    batch_size=cfg["batch_size"], shuffle=False, num_workers=cfg["num_workers"], collate_fn=collate_fn,)
+val_dl = DataLoader(LPR_Data(key, **cfg["val"]),
+    batch_size=cfg["batch_size"], num_workers=cfg["num_workers"], shuffle=False, collate_fn=collate_fn,)
 
 lr_fn = lr_schedule(cfg["lr"], len(train_dl), cfg["epochs"], cfg["warmup"])
 
@@ -53,15 +48,14 @@ if __name__ == "__main__":
     model = TinyLPR(**cfg["model"])
 
     state = TrainState.create(
-        val_frequency = 1,
+        val_frequency=1,
         log_name="tiny_lpr",
         apply_fn=model.apply,
         params=model.init(key, jnp.ones((1, *cfg["img_size"], 1))),
         tx=optax.chain(
             optax.clip_by_global_norm(1.0),
             optax.adam(lr_fn),
-            optax.ema(0.999),
-        ),
+            optax.ema(0.999)),
         lr_fn=lr_fn,
         eval_fn=eval_fn,
         loss_fn=loss_fn,)
