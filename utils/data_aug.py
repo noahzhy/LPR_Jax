@@ -1,6 +1,8 @@
 import os, sys, random, time, glob
 
 import jax
+import jax.numpy as jnp
+import cv2
 import numpy as np
 import dm_pix as pix
 import PIL.Image as pil
@@ -8,8 +10,21 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
 
+def cv2_imwrite(file_path, img):
+    cv2.imencode('.jpg', img)[1].tofile(file_path)
+
+
+def cv2_imread(file_path):
+    cv_img = cv2.imdecode(np.fromfile(file_path, dtype=np.uint8), -1)
+    return cv_img
+
+
 def load_image(image_path):
-    return jnp.array(pil.open(image_path), dtype=jnp.float32) / 255.
+    # return jnp.array(pil.open(image_path), dtype=jnp.float32) / 255.
+    # using opencv to load image
+    # to RGB
+    img = cv2.cvtColor(cv2_imread(image_path), cv2.COLOR_BGR2RGB)
+    return jnp.array(img, dtype=jnp.float32) / 255.
 
 
 @jax.jit
@@ -158,7 +173,7 @@ def augment_image(image, key):
 
 def test_augment_image(output_dir='logs/images'):
     # load image
-    _path = random.choice(glob.glob('data/val/*.jpg'))
+    _path = random.choice(glob.glob('/home/ubuntu/datasets/lpr/val/*.jpg'))
     # _path = 'data/val/6907.jpg'
     img_raw = load_image(_path)
     for i in range(20):

@@ -88,14 +88,16 @@ def show_mask(im_path):
             plt.imshow(mask[:, :, i - 1], cmap='gray')
             plt.title(label[i - 1])
             plt.axis('off')
-    plt.show()
+
+    plt.savefig('mask_sample.png')
+    # plt.show()
 
 
 if __name__ == "__main__":
     # test split_label
     test_split_label()
 
-    im_path = '/Users/haoyu/Documents/datasets/lpr/train/*.jpg'
+    im_path = '/home/ubuntu/datasets/lpr/val/*.jpg'
     im_path = glob.glob(im_path)
     random.shuffle(im_path)
 

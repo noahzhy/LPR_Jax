@@ -201,8 +201,6 @@ class TinyLPR(nn.Module):
 
 
 if __name__ == '__main__':
-    # cpu mode
-    jax.config.update("jax_platform_name", "cpu")
     model = TinyLPR(time_steps=15, n_class=68, n_feat=64, train=True)
     key = jax.random.PRNGKey(0)
     x = jnp.ones((1, 64, 128, 1))
@@ -218,7 +216,6 @@ if __name__ == '__main__':
     def loss_fn(params, x, y):
         time_start = time.perf_counter()
         mask, feats_ctc, ctc = model.apply(params, x)
-        # ctc = model.apply(params, x)
         time_end = time.perf_counter()
         print("time: {:.4f} s".format(time_end - time_start))
         loss = focal_ctc_loss(ctc, y)

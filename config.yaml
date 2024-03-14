@@ -4,19 +4,19 @@ time_steps: &ts 15
 
 # training config
 batch_size: 32
-num_workers: 1
+num_workers: 2
 lr: 2.e-3
 warmup: 5
 epochs: 100
 
 # data config
 train:
-  data_dir: "/Users/haoyu/Documents/datasets/lpr/train"
+  data_dir: "/home/ubuntu/datasets/lpr/train"
   time_steps: *ts
   img_size: *im
   aug: True
 val:
-  data_dir: "/Users/haoyu/Documents/datasets/lpr/val"
+  data_dir: "/home/ubuntu/datasets/lpr/val"
   time_steps: *ts
   img_size: *im
   aug: False
@@ -30,5 +30,5 @@ model:
 
 # loss config
 focal_ctc_loss:
-  alpha: 0.25
-  gamma: 2.0
+  alpha: 0.8
+  gamma: 3.0

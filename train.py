@@ -48,7 +48,7 @@ if __name__ == "__main__":
     model = TinyLPR(**cfg["model"])
 
     state = TrainState.create(
-        val_frequency=1,
+        val_frequency=5,
         log_name="tiny_lpr",
         apply_fn=model.apply,
         params=model.init(key, jnp.ones((1, *cfg["img_size"], 1))),

@@ -89,7 +89,6 @@ def dice_bce_test():
 
 
 if __name__ == "__main__":
-    jax.config.update("jax_platform_name", "cpu")
     print(jax.devices())
 
     dice_bce_test()
