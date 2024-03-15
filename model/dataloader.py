@@ -1,14 +1,15 @@
 import os, sys, random, time, glob, math
 
+import tqdm
 from torch.utils.data import Dataset, DataLoader
 import jax
+# jax.config.update('jax_platform_name', 'cpu')
 import jax.numpy as jnp
-from jax.tree_util import tree_map
-import matplotlib.pyplot as plt
 
 sys.path.append("./utils")
-from data_aug import *
+from utils import load_image
 from gen_label import gen_mask
+from data_aug import *
 
 print(jax.devices())
 
@@ -17,16 +18,6 @@ pad_mask_fn = jax.jit(pad_mask, static_argnums=1)
 resize_fn = jax.jit(resize_image, static_argnums=(1, 2))
 resize_ratio_fn = jax.jit(resize_image_keep_aspect_ratio, static_argnums=(1, 2))
 insert0align2right_fn = jax.jit(insert0align2right, static_argnums=1)
-
-
-def cv2_imread(file_path):
-    cv_img = cv2.imdecode(np.fromfile(file_path, dtype=np.uint8), -1)
-    return cv_img
-
-
-def img_load(image_path):
-    img = cv2.cvtColor(cv2_imread(image_path), cv2.COLOR_BGR2RGB)
-    return jnp.array(img, dtype=jnp.float32) / 255.
 
 
 def collate_fn(batch):
@@ -54,18 +45,10 @@ class LPR_Data(Dataset):
 
     def __getitem__(self, idx):
         img_path = self.imgs[idx]
-        # with jax.default_device(jax.devices("cpu")[0]):
-        print(f'loading {img_path}')
         _mask, label = gen_mask(img_path)
-        print(f'label: {label}')
-        img = cv2.cvtColor(cv2_imread(img_path), cv2.COLOR_BGR2RGB)
-        img = jnp.asarray(img, dtype=jnp.float32) / 255.
-        # img = jnp.array(img, dtype=jnp.float32) / 255.
-
-        print(f'img: {img.shape}, mask: {_mask.shape}, label: {len(label)}')
+        img = load_image(img_path)
 
         if self.aug and jax.random.bernoulli(self.key, 0.5):
-            print('augmenting image')
             img = augment_image(img, self.key)
             img = resize_fn(img, self.img_size)
             mask = resize_fn(_mask, self.img_size, method='nearest')
@@ -84,18 +67,18 @@ class LPR_Data(Dataset):
 # show data augmentation via matplotlib
 def show_augment_image(samples=8):
     key = jax.random.PRNGKey(0)
-    data_dir = "/home/ubuntu/datasets/lpr/val"
-    dataset = LPR_Data(key, data_dir, aug=False)
+    data_dir = "/home/ubuntu/datasets/lpr/train"
+    dataset = LPR_Data(key, data_dir, aug=True)
     dataloader = DataLoader(
         dataset,
         batch_size=samples,
         shuffle=True,
-        num_workers=1,
+        num_workers=0,
         collate_fn=collate_fn,
     )
 
     start_time = time.process_time()
-    for batch in dataloader:
+    for batch in tqdm.tqdm(dataloader):
         img, mask, label = batch
         print(img.shape, mask.shape, label.shape)
         break
@@ -107,10 +90,3 @@ if __name__ == "__main__":
     key = jax.random.PRNGKey(0)
 
     show_augment_image()
-
-    img_path = "/home/ubuntu/datasets/lpr/val/48두9259_1710222267523981000.jpg"
-    print(f'loading {img_path}')
-    _mask, label = gen_mask(img_path)
-    print(f'label: {label}')
-    img = img_load(img_path)
-    print(f'img: {img.shape}, mask: {_mask.shape}, label: {len(label)}')

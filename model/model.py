@@ -210,17 +210,3 @@ if __name__ == '__main__':
     y = model.apply(params, x)
     for i in y:
         print(i.shape)
-
-    from loss import focal_ctc_loss
-
-    def loss_fn(params, x, y):
-        time_start = time.perf_counter()
-        mask, feats_ctc, ctc = model.apply(params, x)
-        time_end = time.perf_counter()
-        print("time: {:.4f} s".format(time_end - time_start))
-        loss = focal_ctc_loss(ctc, y)
-        return loss
-
-    x, y = jnp.ones((1, 64, 128, 1)), jnp.ones((1, 8), dtype=jnp.int32)
-    loss, grads = jax.value_and_grad(loss_fn)(params, x, y)
-    print("loss:", loss)

@@ -3,10 +3,10 @@ img_size: &im [64, 128]
 time_steps: &ts 15
 
 # training config
-batch_size: 32
-num_workers: 2
-lr: 2.e-3
-warmup: 5
+batch_size: 16
+num_workers: 0
+lr: 5.e-4
+warmup: 0
 epochs: 100
 
 # data config

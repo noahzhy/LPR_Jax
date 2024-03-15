@@ -1,7 +1,7 @@
 import os, sys, random, time
 
 import jax
-jax.config.update('jax_platform_name', 'cpu')
+# jax.config.update('jax_platform_name', 'cpu')
 import yaml
 import optax
 import jax.numpy as jnp
@@ -32,7 +32,8 @@ def loss_fn(params, batch, model):
     pred_mask, pred_feats_ctc, pred_ctc = model(params, img)
     loss_ctc = focal_ctc_loss(pred_ctc, label, **cfg["focal_ctc_loss"])
     loss_mask = dice_bce_loss(pred_mask, mask)
-    return loss_ctc + loss_mask, {"loss_ctc": loss_ctc, "loss_mask": loss_mask}
+    loss = 1.5 * loss_ctc + 0.5 * loss_mask
+    return loss, {"loss_ctc": loss_ctc, "loss_mask": loss_mask}
 
 
 def eval_fn(params, batch, model):
@@ -48,14 +49,16 @@ if __name__ == "__main__":
     model = TinyLPR(**cfg["model"])
 
     state = TrainState.create(
-        val_frequency=5,
+        val_frequency=1,
         log_name="tiny_lpr",
         apply_fn=model.apply,
         params=model.init(key, jnp.ones((1, *cfg["img_size"], 1))),
-        tx=optax.chain(
-            optax.clip_by_global_norm(1.0),
-            optax.adam(lr_fn),
-            optax.ema(0.999)),
+        # tx=optax.chain(
+        #     optax.clip_by_global_norm(1.0),
+        #     optax.adam(lr_fn),
+        #     optax.ema(0.999),
+        # ),
+        tx=optax.adam(lr_fn),
         lr_fn=lr_fn,
         eval_fn=eval_fn,
         loss_fn=loss_fn,)

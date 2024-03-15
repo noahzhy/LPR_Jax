@@ -38,7 +38,7 @@ def focal_ctc_loss_test():
     # timeit and get function result
     start_t = perf_counter()
     for i in range(1000):
-        loss = focal_ctc_loss(logits, labels)
+        loss = focal_ctc_loss(logits, labels, alpha=0.25, gamma=3)
     end_t = perf_counter()
     avg_time = (end_t - start_t) / 1000
     print('\33[92m[pass]\33[00m focal_ctc_loss() test passed.')
