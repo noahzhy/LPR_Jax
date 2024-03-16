@@ -3,23 +3,23 @@ img_size: &im [96, 192]
 time_steps: &ts 15
 
 # training config
-batch_size: &bs 32
+batch_size: &bs 64
 num_workers: 0
-lr: 5.e-4
+lr: 1.e-3
 warmup: 0
 epochs: 100
 
 # data config
 train:
   batch_size: *bs
-  tfrecord: "data/val.tfrecord"
+  tfrecord: "/home/ubuntu/datasets/lpr/train.tfrecord"
   time_steps: *ts
   img_size: *im
   aug: True
   
 val:
   batch_size: *bs
-  tfrecord: "data/val.tfrecord"
+  tfrecord: "/home/ubuntu/datasets/lpr/val.tfrecord"
   time_steps: *ts
   img_size: *im
   aug: False

@@ -1,16 +1,14 @@
 import os, sys, random, time
 
 import jax
-jax.config.update('jax_platform_name', 'cpu')
+# jax.config.update('jax_platform_name', 'cpu')
 import yaml
 import optax
 import jax.numpy as jnp
-# from torch.utils.data import DataLoader
 
 sys.path.append("./utils")
 from utils import batch_ctc_greedy_decoder, batch_remove_blank
 from fit import lr_schedule, TrainState
-# from model.dataloader import *
 from model.tfdl import get_data, get_tfrecord_len
 from model.model import TinyLPR
 from model.loss import *
@@ -19,16 +17,12 @@ from model.loss import *
 key = jax.random.PRNGKey(0)
 cfg = yaml.safe_load(open("config.yaml"))
 
-# train_dl = DataLoader(LPR_Data(key, **cfg["train"]),
-#     batch_size=cfg["batch_size"], num_workers=cfg["num_workers"], shuffle=True, collate_fn=collate_fn,)
-
-# val_dl = DataLoader(LPR_Data(key, **cfg["val"]),
-#     batch_size=cfg["batch_size"], num_workers=cfg["num_workers"], shuffle=False, collate_fn=collate_fn,)
-
 train_dl = get_data(**cfg["train"])
 val_dl = get_data(**cfg["val"])
 
-lr_fn = lr_schedule(cfg["lr"], get_tfrecord_len(cfg["train"]["tfrecord"]), cfg["epochs"], cfg["warmup"])
+steps_per_epoch = get_tfrecord_len(cfg["train"]["tfrecord"]) // cfg["batch_size"]
+print(f"steps_per_epoch: {steps_per_epoch}")
+lr_fn = lr_schedule(cfg["lr"], steps_per_epoch, cfg["epochs"], cfg["warmup"])
 
 
 def loss_fn(params, batch, model):
@@ -57,12 +51,12 @@ if __name__ == "__main__":
         log_name="tiny_lpr",
         apply_fn=model.apply,
         params=model.init(key, jnp.ones((1, *cfg["img_size"], 1))),
-        # tx=optax.chain(
-        #     optax.clip_by_global_norm(1.0),
-        #     optax.adam(lr_fn),
-        #     optax.ema(0.999),
-        # ),
-        tx=optax.adam(lr_fn),
+        tx=optax.chain(
+            optax.clip_by_global_norm(1.0),
+            optax.adam(lr_fn),
+            optax.ema(0.999),
+        ),
+        # tx=optax.adam(lr_fn),
         lr_fn=lr_fn,
         eval_fn=eval_fn,
         loss_fn=loss_fn,)
