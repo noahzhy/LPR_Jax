@@ -2,6 +2,7 @@ checkpoints/
 logs/
 data/*/
 model.tflite
+*.png
 
 train_backup.py
 test.ipynb

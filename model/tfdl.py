@@ -40,27 +40,42 @@ def load_tfreocrd(tffile_paths, batch_size=32, n_map_threads=n_map_threads):
     return ds
 
 
-def gen_mask(bbox, h, w, len_label):
-    _mask = np.zeros((h, w, len_label), dtype=np.int32)
+def gen_mask(bbox, h, w, len_label, time_step=None):
+    # _mask = np.zeros((h, w, len_label), dtype=np.int32)
+    _black = np.zeros((h, w, time_step), dtype=np.int32)
 
     for i, box in enumerate(bbox):
         b0 = max(0, box[0])
         b1 = max(0, box[1])
         b2 = min(w, box[2])
         b3 = min(h, box[3])
-        _mask[b1:b3, b0:b2, i] = 1
+        # _mask[b1:b3, b0:b2, i] = 1
+        _black[b1:b3, b0:b2, time_step-(2*(len_label-i)-1)] = 1
 
-    return _mask
+    return _black
 
 
 def pad_mask(mask, time_step):
+    # # sum to one channel
+    _mask = np.sum(mask, axis=-1)
+    # save it to test.png
+    img = Image.fromarray(np.array(_mask * 255, dtype=np.uint8))
+    img.save("test.png")
+
+    # save each _black channel to {i}.png
+    for i in range(mask.shape[-1]):
+        img = Image.fromarray(np.array(mask[:, :, i] * 255, dtype=np.uint8))
+        img.save(f"{i}.png")
+
+    return mask
+
     # via tf
     # given mask shape (h, w, c)
     # pad mask to shape (h, w, time_step)
-    return tf.pad(mask, [[0, 0], [0, 0], [0, time_step - mask.shape[-1]]], 'CONSTANT')
+    # return tf.pad(mask, [[0, 0], [0, 0], [0, time_step - mask.shape[-1]]], 'CONSTANT')
 
 
-def insert0align2right(label, time_step=15):
+def pad_label(label, time_step=15):
     _label = tf.zeros(len(label) * 2 - 1, dtype=tf.int32)
 
     for i in range(len(label)):
@@ -159,7 +174,7 @@ def get_data(tfrecord, batch_size, img_size, time_steps, aug):
             _bbox = tf.io.decode_raw(bbox[i].numpy(), tf.int64).numpy().reshape(-1, 4)
             # tf to [0, 1]
             img = tf.cast(_image, tf.float32) / 255.
-            _mask = gen_mask(_bbox, _size[0], _size[1], len(_label))
+            _mask = gen_mask(_bbox, _size[0], _size[1], len(_label), time_steps)
 
             if aug: img = data_augment(img)
 
@@ -172,21 +187,8 @@ def get_data(tfrecord, batch_size, img_size, time_steps, aug):
                 img = resize_keep_ratio(img, img_size)
                 mask = resize_keep_ratio(_mask, img_size, method='nearest')
 
-            # # sum mask to on channel and save it as test.jpg
-            # m = tf.reduce_sum(mask, axis=-1)
-            # Image.fromarray((m.numpy() * 255).astype(np.uint8)).save('test.jpg')
-
-            # # save image as test.jpg
-            # # tf to np
-            # img = img.numpy()
-            # img = (img * 255).astype(np.uint8)
-            # img = np.squeeze(img, axis=-1)
-            # Image.fromarray(img).convert('RGB').save('test.jpg')
-
-            mask = pad_mask(mask, time_steps)
-            _label = insert0align2right(_label, time_steps)
-
-            # key = jax.random.split(key)[0]
+            # mask = pad_mask(mask, time_steps)
+            _label = pad_label(_label, time_steps)
 
             image_arr = image_arr.write(i, img)
             mask_arr = mask_arr.write(i, mask)
