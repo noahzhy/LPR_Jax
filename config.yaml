@@ -1,9 +1,9 @@
 # This is a config file for the license plate recognition task
-img_size: &im [64, 128]
+img_size: &im [96, 192]
 time_steps: &ts 15
 
 # training config
-batch_size: 16
+batch_size: &bs 32
 num_workers: 0
 lr: 5.e-4
 warmup: 0
@@ -11,12 +11,15 @@ epochs: 100
 
 # data config
 train:
-  data_dir: "/home/ubuntu/datasets/lpr/train"
+  batch_size: *bs
+  tfrecord: "data/val.tfrecord"
   time_steps: *ts
   img_size: *im
   aug: True
+  
 val:
-  data_dir: "/home/ubuntu/datasets/lpr/val"
+  batch_size: *bs
+  tfrecord: "data/val.tfrecord"
   time_steps: *ts
   img_size: *im
   aug: False

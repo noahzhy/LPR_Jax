@@ -68,18 +68,11 @@ def gen_mask(im_path):
     bbox = np.loadtxt(im_path.replace('jpg', 'txt'), dtype=int)
 
     for i, box in enumerate(bbox):
-        try:
-            box = box.tolist()
-            if len(box) != 4:
-                continue
-            if box[0] < 0: box[0] = 0
-            if box[1] < 0: box[1] = 0
-            if box[2] > w: box[2] = w
-            if box[3] > h: box[3] = h
-            _mask[box[1]:box[3], box[0]:box[2], i] = 1
-        except:
-            print(f'error: {im_path}')
-            pass
+        b0 = max(0, box[0])
+        b1 = max(0, box[1])
+        b2 = min(w, box[2])
+        b3 = min(h, box[3])
+        _mask[b1:b3, b0:b2, i] = 1
 
     return _mask, label
 

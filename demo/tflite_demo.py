@@ -31,7 +31,8 @@ def is_valid_label(label: list):
 
 
 class TFliteDemo:
-    def __init__(self, model_path, blank=0, conf_mode="min"):
+    def __init__(self, model_path, size=(96, 192), blank=0, conf_mode="min"):
+        self.size = size
         self.blank = blank
         self.conf_mode = conf_mode
         self.interpreter = tf.lite.Interpreter(model_path=model_path)
@@ -47,7 +48,7 @@ class TFliteDemo:
     def preprocess(self, img_path):
         image = cv2_imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = center_fit(image, 128, 64, top_left=True)
+        image = center_fit(image, self.size[1], self.size[0], top_left=True)
         image = np.reshape(image, (1, *image.shape, 1)).astype(np.uint8)
         return image
 
@@ -81,8 +82,10 @@ class TFliteDemo:
 # main
 if __name__ == '__main__':
     num_samples = 200
+    # img_size = (96, 192)
+    img_size = (64, 128)
     # init and load model
-    demo = TFliteDemo('model.tflite')
+    demo = TFliteDemo('model.tflite', size=img_size, blank=0, conf_mode="min")
 
     # get random image
     val_path = "/Users/haoyu/Documents/datasets/lpr/val"

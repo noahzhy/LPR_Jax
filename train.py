@@ -1,16 +1,17 @@
 import os, sys, random, time
 
 import jax
-# jax.config.update('jax_platform_name', 'cpu')
+jax.config.update('jax_platform_name', 'cpu')
 import yaml
 import optax
 import jax.numpy as jnp
-from torch.utils.data import DataLoader
+# from torch.utils.data import DataLoader
 
 sys.path.append("./utils")
 from utils import batch_ctc_greedy_decoder, batch_remove_blank
 from fit import lr_schedule, TrainState
-from model.dataloader import *
+# from model.dataloader import *
+from model.tfdl import get_data, get_tfrecord_len
 from model.model import TinyLPR
 from model.loss import *
 
@@ -18,13 +19,16 @@ from model.loss import *
 key = jax.random.PRNGKey(0)
 cfg = yaml.safe_load(open("config.yaml"))
 
-train_dl = DataLoader(LPR_Data(key, **cfg["train"]),
-    batch_size=cfg["batch_size"], num_workers=cfg["num_workers"], shuffle=True, collate_fn=collate_fn,)
+# train_dl = DataLoader(LPR_Data(key, **cfg["train"]),
+#     batch_size=cfg["batch_size"], num_workers=cfg["num_workers"], shuffle=True, collate_fn=collate_fn,)
 
-val_dl = DataLoader(LPR_Data(key, **cfg["val"]),
-    batch_size=cfg["batch_size"], num_workers=cfg["num_workers"], shuffle=False, collate_fn=collate_fn,)
+# val_dl = DataLoader(LPR_Data(key, **cfg["val"]),
+#     batch_size=cfg["batch_size"], num_workers=cfg["num_workers"], shuffle=False, collate_fn=collate_fn,)
 
-lr_fn = lr_schedule(cfg["lr"], len(train_dl), cfg["epochs"], cfg["warmup"])
+train_dl = get_data(**cfg["train"])
+val_dl = get_data(**cfg["val"])
+
+lr_fn = lr_schedule(cfg["lr"], get_tfrecord_len(cfg["train"]["tfrecord"]), cfg["epochs"], cfg["warmup"])
 
 
 def loss_fn(params, batch, model):

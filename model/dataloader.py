@@ -3,13 +3,14 @@ import os, sys, random, time, glob, math
 import tqdm
 from torch.utils.data import Dataset, DataLoader
 import jax
-# jax.config.update('jax_platform_name', 'cpu')
+jax.config.update('jax_platform_name', 'cpu')
 import jax.numpy as jnp
 
 sys.path.append("./utils")
 from utils import load_image
 from gen_label import gen_mask
 from data_aug import *
+
 
 print(jax.devices())
 
@@ -65,10 +66,12 @@ class LPR_Data(Dataset):
 
 
 # show data augmentation via matplotlib
-def show_augment_image(samples=8):
+def show_augment_image(samples=32):
+    # size = (64, 128)
+    size = (96, 192)
     key = jax.random.PRNGKey(0)
-    data_dir = "/home/ubuntu/datasets/lpr/train"
-    dataset = LPR_Data(key, data_dir, aug=True)
+    data_dir = "/Users/haoyu/Documents/datasets/lpr/train"
+    dataset = LPR_Data(key, data_dir, aug=False, img_size=size)
     dataloader = DataLoader(
         dataset,
         batch_size=samples,
