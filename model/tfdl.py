@@ -196,8 +196,8 @@ def get_data(tfrecord, batch_size, img_size, time_steps, aug):
 
             # yield image_arr.stack(), mask_arr.stack(), label_arr.stack()
             # to np
-            yield image_arr.stack().numpy(), mask_arr.stack().numpy(), label_arr.stack().numpy()
-            # yield jnp.array(image_arr.stack()), jnp.array(mask_arr.stack()), jnp.array(label_arr.stack())
+            # yield image_arr.stack().numpy(), mask_arr.stack().numpy(), label_arr.stack().numpy()
+        yield jnp.array(image_arr.stack()), jnp.array(mask_arr.stack()), jnp.array(label_arr.stack())
 
 
 if __name__ == "__main__":
@@ -214,5 +214,6 @@ if __name__ == "__main__":
     data = get_data(tfrecord_path, batch_size, img_size, time_step, aug)
 
     for i in data:
+        print(i[2])
         print(i[0].shape, i[1].shape, i[2].shape)
         break
