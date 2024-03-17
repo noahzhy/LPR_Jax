@@ -1,15 +1,16 @@
 import os, sys, random, time
 
 import jax
-# jax.config.update('jax_platform_name', 'cpu')
+jax.config.update('jax_platform_name', 'cpu')
 import yaml
 import optax
 import jax.numpy as jnp
+import tensorflow_datasets as tfds
 
 sys.path.append("./utils")
 from utils import batch_ctc_greedy_decoder, batch_remove_blank
 from fit import lr_schedule, TrainState
-from model.tfdl import get_data, get_tfrecord_len
+from model.tfr_dl import get_data
 from model.model import TinyLPR
 from model.loss import *
 
@@ -17,12 +18,13 @@ from model.loss import *
 key = jax.random.PRNGKey(0)
 cfg = yaml.safe_load(open("config.yaml"))
 
-train_dl = get_data(**cfg["train"])
-val_dl = get_data(**cfg["val"])
+train_ds, train_len = get_data(**cfg["train"])
+val_ds, val_len = get_data(**cfg["val"])
 
-steps_per_epoch = get_tfrecord_len(cfg["train"]["tfrecord"]) // cfg["batch_size"]
-print(f"steps_per_epoch: {steps_per_epoch}")
-lr_fn = lr_schedule(cfg["lr"], steps_per_epoch, cfg["epochs"], cfg["warmup"])
+train_dl = iter(tfds.as_numpy(train_ds))
+val_dl = iter(tfds.as_numpy(val_ds))
+
+lr_fn = lr_schedule(cfg["lr"], train_len, cfg["epochs"], cfg["warmup"])
 
 
 def loss_fn(params, batch, model):

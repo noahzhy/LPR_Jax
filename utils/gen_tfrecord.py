@@ -10,6 +10,21 @@ from gen_label import *
 from utils import load_image
 
 
+def gen_mask(bbox, size, len_label, time_step=15):
+    mask = np.zeros((size[0], size[1], time_step), dtype=np.int32)
+    h, w = size
+
+    for i, box in enumerate(bbox):
+        b0 = max(0, box[0])
+        b1 = max(0, box[1])
+        b2 = min(w, box[2])
+        b3 = min(h, box[3])
+        # mask[b1:b3, b0:b2, i] = 1
+        mask[b1:b3, b0:b2, time_step-(2*(len_label-i)-1)] = 1
+
+    return mask
+
+
 # resize image to width=128 and keep aspect ratio, also resize the bboxes(4 points)
 # bbox: [x1, y1, x2, y2] and int64
 def resize_image_keep_aspect_ratio(image, bbox, width=192):
@@ -33,7 +48,7 @@ def gen_tfrecord(dir_path, file_name):
 
     img_ds = glob.glob(dir_path + '/*.jpg')
     # shuffle the dataset
-    np.random.shuffle(img_ds)
+    # np.random.shuffle(img_ds)
 
     for img_path in img_ds:
         txt_path = img_path.replace('.jpg', '.txt')
@@ -43,6 +58,14 @@ def gen_tfrecord(dir_path, file_name):
         image = Image.open(img_path).convert('RGB')
         image, bbox = resize_image_keep_aspect_ratio(np.array(image, dtype=np.float32), bbox)
         height, width, _ = image.shape
+
+        mask = gen_mask(bbox, (height, width), len(label))
+
+        # # sum the mask to one channel
+        # mask = np.sum(mask, axis=2)
+        # # save the mask as test.png
+        # mask = Image.fromarray(np.array(mask, dtype=np.uint8) * 255)
+        # mask.save('test.png')
 
         # # draw box on the image
         # image = Image.fromarray(np.array(image, dtype=np.uint8))
@@ -57,15 +80,15 @@ def gen_tfrecord(dir_path, file_name):
         # quit()
 
         image = np.array(image, dtype=np.uint8).tobytes()
+        mask = np.array(mask, dtype=np.int64).tobytes()
         label = np.array(label, dtype=np.int64).tobytes()
-        bbox = np.array(bbox, dtype=np.int64).tobytes()
 
         size = np.array([height, width], dtype=np.int64).tobytes()
 
         feature = {
             'image': _bytes_feature(image),
+            'mask': _bytes_feature(mask),
             'label': _bytes_feature(label),
-            'bbox': _bytes_feature(bbox),
             'size': _bytes_feature(size),
         }
 
@@ -73,6 +96,7 @@ def gen_tfrecord(dir_path, file_name):
             feature=feature)).SerializeToString())
 
     writer.close()
+    print("\033[1;32m{} tfrecord done\033[0m".format(file_name))
 
 
 if __name__ == '__main__':

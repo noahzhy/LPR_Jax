@@ -14,11 +14,11 @@ from data_aug import *
 
 print(jax.devices())
 
-# jit with static argnums
-pad_mask_fn = jax.jit(pad_mask, static_argnums=1)
-resize_fn = jax.jit(resize_image, static_argnums=(1, 2))
-resize_ratio_fn = jax.jit(resize_image_keep_aspect_ratio, static_argnums=(1, 2))
-insert0align2right_fn = jax.jit(insert0align2right, static_argnums=1)
+# # jit with static argnums
+# pad_mask_fn = jax.jit(pad_mask, static_argnums=1)
+# resize_fn = jax.jit(resize_image, static_argnums=(1, 2))
+# resize_ratio_fn = jax.jit(resize_image_keep_aspect_ratio, static_argnums=(1, 2))
+# insert0align2right_fn = jax.jit(insert0align2right, static_argnums=1)
 
 
 ds_desc = {
