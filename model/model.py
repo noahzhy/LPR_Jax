@@ -134,7 +134,8 @@ class Conv1x1(nn.Module):
             use_bias=True,
             kernel_init=nn.initializers.kaiming_normal()
         )(inputs)
-        x = nn.relu(x)
+        # x = nn.relu(x)
+        x = nn.softmax(x)
         return x
 
 
@@ -155,7 +156,6 @@ class Attention(nn.Module):
         # 1x1 conv
         char_map = self.char_map(inputs)
         n, h, w, c = char_map.shape
-        # char_map = jnp.reshape(char_map, (n, h * w, c))
 
         x = jnp.reshape(char_map, (-1, h * w, self.temporal))
         y = jnp.reshape(_spatial, (-1, h * w, self.channels))
