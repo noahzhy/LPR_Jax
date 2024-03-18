@@ -1,7 +1,7 @@
 import os, sys, random, time
 
 import jax
-jax.config.update('jax_platform_name', 'cpu')
+# jax.config.update('jax_platform_name', 'cpu')
 import yaml
 import optax
 import jax.numpy as jnp
@@ -45,7 +45,7 @@ class TrainState(train_state.TrainState):
     @jax.jit
     def test_step(state, batch):
         img, mask, label = batch
-        pred_mask, pred_feats_ctc, pred_ctc = state.apply_fn(params, img)
+        pred_mask, pred_feats_ctc, pred_ctc = state.apply_fn(state.params, img)
         label = batch_remove_blank(label)
         pred = batch_ctc_greedy_decoder(pred_ctc)
         mean = jnp.mean(jnp.array([1 if jnp.array_equal(l, p) else 0 for l, p in zip(label, pred)]))
