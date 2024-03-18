@@ -66,7 +66,7 @@ def fit(state, train_ds, test_ds, epochs=100, log_name="default", lr_fn=None, va
             tbx_writer.add_scalar("accuracy", accuracy, epoch)
             print(f"epoch: {epoch:3d}, accuracy: {accuracy:.4f}")
 
-            if accuracy > best:
+            if accuracy >= best:
                 best = accuracy
                 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "checkpoints"))
                 if not os.path.exists(parent_dir): os.makedirs(parent_dir)

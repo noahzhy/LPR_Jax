@@ -43,9 +43,13 @@ class TrainState(train_state.TrainState):
         return state, loss, _dict
 
     @jax.jit
-    def test_step(state, batch):
+    def predict(state, batch):
         img, mask, label = batch
         pred_mask, pred_feats_ctc, pred_ctc = state.apply_fn(state.params, img)
+        return pred_ctc, label
+
+    def test_step(state, batch):
+        pred_ctc, label = state.predict(batch)
         label = batch_remove_blank(label)
         pred = batch_ctc_greedy_decoder(pred_ctc)
         mean = jnp.mean(jnp.array([1 if jnp.array_equal(l, p) else 0 for l, p in zip(label, pred)]))
