@@ -71,4 +71,5 @@ if __name__ == "__main__":
         # ),
         )
 
-    fit(state, train_dl, val_dl, epochs=cfg["epochs"], lr_fn=lr_fn)
+    fit(state, train_dl, val_dl,
+        epochs=cfg["epochs"], lr_fn=lr_fn, val_frequency=5)

@@ -46,20 +46,21 @@ def resize_image(image, mask, label, size, time_step=15, target_size=(96, 192)):
     return image, mask, label, size
 
 
+# def pad_label(label, time_step=8):
+#     _label = tf.zeros(len(label) * 2 - 1, dtype=tf.int32)
+#     for i in range(len(label)):
+#         _label = tf.tensor_scatter_nd_update(_label, [[i * 2]], [label[i]])
+
+#     return tf.pad(_label, [[time_step - len(_label), 0]], 'CONSTANT')
+
+
 def pad_label(label, time_step=15):
-    _label = tf.zeros(len(label) * 2 - 1, dtype=tf.int32)
-
-    for i in range(len(label)):
-        _label = tf.tensor_scatter_nd_update(_label, [[i * 2]], [label[i]])
-
-    return tf.pad(_label, [[time_step - len(_label), 0]], 'CONSTANT')
+    return tf.pad(label, [[0, time_step - len(label)]], 'CONSTANT')
 
 
 def pad_image_mask(image, mask, label, size, time_step=15, target_size=(96, 192)):
-    # convert to float32 and normalize
     image = tf.image.rgb_to_grayscale(image)
-    # image = tf.cast(image, tf.float32) / 255.
-    label = pad_label(label, time_step)
+    label = pad_label(label, 8)
     return image, mask, label
 
 
@@ -87,7 +88,7 @@ def get_data(tfrecord, batch_size=32, data_aug=True, n_map_threads=n_map_threads
 
     ds = ds.map(pad_image_mask, num_parallel_calls=n_map_threads)
 
-    ds = ds.shuffle(2048, reshuffle_each_iteration=True)
+    ds = ds.shuffle(2048, reshuffle_each_iteration=False)
     ds = ds.batch(batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
     return ds, ds_len
 
@@ -101,26 +102,30 @@ if __name__ == "__main__":
     time_step = 15
     aug = True
 
+    label = tf.constant([1, 2, 3, 4, 5, 6, 7, 8])
+    res = pad_label(label, time_step=15)
+    print(res)
+
     # tfrecord_path = "/Users/haoyu/Documents/datasets/val.tfrecord"
-    tfrecord_path = "data/val.tfrecord"
-    ds, ds_len = get_data(tfrecord_path, batch_size, aug)
-    dl = iter(tfds.as_numpy(ds))
+    # # tfrecord_path = "data/val.tfrecord"
+    # ds, ds_len = get_data(tfrecord_path, batch_size, aug)
+    # dl = iter(tfds.as_numpy(ds))
 
-    for data in tqdm.tqdm(dl, total=ds_len):
-        # data = next(dl)
-        img, mask, label = data
-        print(img.shape, mask.shape, label.shape)
+    # for data in tqdm.tqdm(dl, total=ds_len):
+    #     # data = next(dl)
+    #     img, mask, label = data
+    #     print(img.shape, mask.shape, label.shape)
 
-        # save one image as test.jpg
-        img = img[0] * 255
-        img = np.squeeze(img, -1)
-        img = Image.fromarray(np.uint8(img))
-        img.save('test.jpg')
+    #     # save one image as test.jpg
+    #     img = img[0] * 255
+    #     img = np.squeeze(img, -1)
+    #     img = Image.fromarray(np.uint8(img))
+    #     img.save('test.jpg')
 
-        # sum the mask to one channel
-        mask = mask[0] * 255
-        mask = np.sum(mask, axis=-1)
-        # save the mask as test.png
-        mask = Image.fromarray(np.uint8(mask))
-        mask.save('test.png')
-        break
+    #     # sum the mask to one channel
+    #     mask = mask[0] * 255
+    #     mask = np.sum(mask, axis=-1)
+    #     # save the mask as test.png
+    #     mask = Image.fromarray(np.uint8(mask))
+    #     mask.save('test.png')
+    #     break
