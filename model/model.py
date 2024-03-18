@@ -134,8 +134,8 @@ class Conv1x1(nn.Module):
             use_bias=True,
             kernel_init=nn.initializers.kaiming_normal()
         )(inputs)
-        # x = nn.relu(x)
-        x = nn.softmax(x)
+        # # x = nn.relu(x)
+        # x = nn.softmax(x)
         return x
 
 
@@ -186,6 +186,8 @@ class TinyLPR(nn.Module):
         ctc = nn.log_softmax(dense)
 
         if self.train:
+            # softmax attn
+            attn = nn.softmax(attn)
             attn = UpSample(up_repeat=3)(attn)
             attn = nn.Conv(features=self.time_steps,
                 kernel_size=(1, 1),
