@@ -37,6 +37,16 @@ def resize_image_keep_aspect_ratio(image, bbox, width=192):
     return image, bbox
 
 
+def resize_image_and_bbox(image, bbox, size=(96, 192)):
+    h, w, _ = image.shape
+    r_h = size[0] / h
+    r_w = size[1] / w
+    image = tf.image.resize(image, size, antialias=True)
+    bbox = tf.cast(bbox, tf.float32)
+    bbox = tf.cast(tf.round(bbox * [r_w, r_h, r_w, r_h]), tf.int64)
+    return image, bbox
+
+
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
@@ -56,9 +66,9 @@ def gen_tfrecord(dir_path, file_name):
         _, label = gen_label(img_path)
 
         image = Image.open(img_path).convert('RGB')
-        image, bbox = resize_image_keep_aspect_ratio(np.array(image, dtype=np.float32), bbox)
+        # image, bbox = resize_image_keep_aspect_ratio(np.array(image, dtype=np.float32), bbox)
+        image, bbox = resize_image_and_bbox(np.array(image, dtype=np.float32), bbox)
         height, width, _ = image.shape
-
         mask = gen_mask(bbox, (height, width), len(label))
 
         # # sum the mask to one channel
@@ -83,13 +93,13 @@ def gen_tfrecord(dir_path, file_name):
         mask = np.array(mask, dtype=np.int64).tobytes()
         label = np.array(label, dtype=np.int64).tobytes()
 
-        size = np.array([height, width], dtype=np.int64).tobytes()
+        # size = np.array([height, width], dtype=np.int64).tobytes()
 
         feature = {
             'image': _bytes_feature(image),
             'mask': _bytes_feature(mask),
             'label': _bytes_feature(label),
-            'size': _bytes_feature(size),
+            # 'size': _bytes_feature(size),
         }
 
         writer.write(tf.train.Example(features=tf.train.Features(

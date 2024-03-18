@@ -12,14 +12,14 @@ epochs: 100
 # data config
 train:
   batch_size: *bs
-  tfrecord: "/home/ubuntu/datasets/lpr/train.tfrecord"
-  # tfrecord: "data/val.tfrecord"
+  # tfrecord: "/home/ubuntu/datasets/lpr/train.tfrecord"
+  tfrecord: "data/val.tfrecord"
   data_aug: True
   
 val:
   batch_size: *bs
-  tfrecord: "/home/ubuntu/datasets/lpr/val.tfrecord"
-  # tfrecord: "data/val.tfrecord"
+  # tfrecord: "/home/ubuntu/datasets/lpr/val.tfrecord"
+  tfrecord: "data/val.tfrecord"
   data_aug: False
 
 # model config

@@ -87,7 +87,7 @@ def get_data(tfrecord, batch_size=32, data_aug=True, n_map_threads=n_map_threads
 
     ds = ds.map(pad_image_mask, num_parallel_calls=n_map_threads)
 
-    ds = ds.shuffle(ds.cardinality(), reshuffle_each_iteration=True)
+    ds = ds.shuffle(2048, reshuffle_each_iteration=True)
     ds = ds.batch(batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
     return ds, ds_len
 
