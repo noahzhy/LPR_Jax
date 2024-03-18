@@ -5,17 +5,17 @@ time_steps: &ts 15
 # training config
 batch_size: &bs 32
 num_workers: 0
-lr: 3.e-4
+lr: 2.e-3
 warmup: 0
 epochs: 100
 
 # data config
 train:
   batch_size: *bs
-  tfrecord: "/home/ubuntu/datasets/lpr/train.tfrecord"
+  tfrecord: "/home/ubuntu/datasets/lpr/val.tfrecord"
   # tfrecord: "data/val.tfrecord"
-  data_aug: True
-  
+  data_aug: False
+
 val:
   batch_size: *bs
   tfrecord: "/home/ubuntu/datasets/lpr/val.tfrecord"
