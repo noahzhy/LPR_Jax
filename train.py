@@ -58,11 +58,13 @@ class TrainState(train_state.TrainState):
 
 if __name__ == "__main__":
     key = jax.random.PRNGKey(0)
+
     model = TinyLPR(**cfg["model"])
+    init_params = model.init(key, jnp.random.rand(1, *cfg["img_size"], 1))
 
     state = TrainState.create(
         apply_fn=model.apply,
-        params=model.init(key, jnp.ones((1, *cfg["img_size"], 1))),
+        params=init_params,
         tx=optax.adam(lr_fn),
         # tx=optax.chain(
         #     optax.clip_by_global_norm(1.0),

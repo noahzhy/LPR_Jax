@@ -5,7 +5,7 @@ time_steps: &ts 15
 # training config
 batch_size: &bs 32
 num_workers: 0
-lr: 2.e-3
+lr: 3.e-4
 warmup: 0
 epochs: 100
 

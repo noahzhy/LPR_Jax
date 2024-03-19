@@ -34,7 +34,7 @@ state = TrainState.create(
     tx=optax.adam(1e-3),
 )
 
-state = checkpoints.restore_checkpoint("checkpoints", state, 10)
+state = checkpoints.restore_checkpoint("checkpoints", state, 94)
 
 tfrec = "/home/ubuntu/datasets/lpr/val.tfrecord"
 ds = get_data(tfrec, batch_size=32, data_aug=False, n_map_threads=4)
@@ -60,3 +60,10 @@ plt.imshow(_mask)
 plt.show()
 
 
+# %%
+# show _mask via matplotlib
+import matplotlib.pyplot as plt
+plt.imshow(imgs[0], cmap='gray')
+plt.show()
+
+# %%
