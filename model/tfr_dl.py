@@ -60,7 +60,7 @@ def pad_label(label, time_step=8):
 
 def pad_image_mask(image, mask, label, size, time_step=15, target_size=(96, 192)):
     image = tf.image.rgb_to_grayscale(image)
-    label = pad_label(label, 8)
+    label = pad_label(label, time_step)
     return image, mask, label
 
 
