@@ -23,11 +23,11 @@ class UpSample(nn.Module):
     up_repeat: int = 3
 
     @nn.compact
-    def __call__(self, x):
+    def __call__(self, x, train=True):
         for _ in range(self.up_repeat):
             x = jax.image.resize(x, shape=(x.shape[0], x.shape[1] * 2, x.shape[2] * 2, x.shape[3]), method="bilinear")
             x = nn.Conv(features=64, kernel_size=(5, 5), strides=(1, 1), padding="same", kernel_init=nn.initializers.he_normal(), use_bias=False)(x)
-            x = nn.BatchNorm(use_running_average=True)(x)
+            x = nn.BatchNorm(use_running_average=not train)(x)
             x = nn.PReLU()(x)
         return x
 
@@ -47,18 +47,18 @@ class BottleNeck(nn.Module):
         self.out = _make_divisible(self.out_size * self.scale, 8)
 
     @nn.compact
-    def __call__(self, inputs):
+    def __call__(self, inputs, train=True):
         # shortcut
         x = nn.Conv(features=self.exp, kernel_size=(1, 1), strides=1, padding="same", kernel_init=nn.initializers.he_normal(), use_bias=False)(inputs)
-        x = nn.BatchNorm(use_running_average=True)(x)
+        x = nn.BatchNorm(use_running_average=not train)(x)
         x = self.activation(x)
 
         x = nn.Conv(features=x.shape[-1], kernel_size=(self.k, self.k), strides=self.s, padding="same", feature_group_count=x.shape[-1], use_bias=False)(x)
-        x = nn.BatchNorm(use_running_average=True)(x)
+        x = nn.BatchNorm(use_running_average=not train)(x)
         x = self.activation(x)
 
         x = nn.Conv(features=self.out, kernel_size=(1, 1), strides=1, padding="same", kernel_init=nn.initializers.he_normal(), use_bias=False)(x)
-        x = nn.BatchNorm(use_running_average=True)(x)
+        x = nn.BatchNorm(use_running_average=not train)(x)
 
         if self.s == 1 and self._in == self.out:
             x = jnp.add(x, inputs)
@@ -83,17 +83,17 @@ class MobileNetV3Small(nn.Module):
         ]
 
     @nn.compact
-    def __call__(self, x):
+    def __call__(self, x, train=True):
         # 64, 128, 1
         x = nn.Conv(features=16, kernel_size=(3, 3), strides=(2, 2), padding="same", use_bias=False)(x)
-        x = nn.BatchNorm(use_running_average=True)(x)
+        x = nn.BatchNorm(use_running_average=not train)(x)
         x = nn.relu(x)
 
         for i, (k, _in, exp, out, NL, s) in enumerate(self.bnecks):
-            x = BottleNeck(_in, exp, out, s, k, NL, self.width_multiplier)(x)
+            x = BottleNeck(_in, exp, out, s, k, NL, self.width_multiplier)(x, train)
 
         # last
-        x = BottleNeck(16, 72, self.out_channels, 1, 5, nn.relu, 1.0)(x)
+        x = BottleNeck(16, 72, self.out_channels, 1, 5, nn.relu, 1.0)(x, train)
         return x
 
 
@@ -168,7 +168,6 @@ class TinyLPR(nn.Module):
     time_steps: int = 15
     n_class: int = 68
     n_feat: int = 64
-    train: bool = True
 
     def setup(self):
         self.backbone = MobileNetV3Small(0.25, self.n_feat)
@@ -179,16 +178,16 @@ class TinyLPR(nn.Module):
         )
 
     @nn.compact
-    def __call__(self, inputs):
-        x = self.backbone(inputs)
+    def __call__(self, inputs, train=True):
+        x = self.backbone(inputs, train)
         mat, attn = self.attention(x)
         dense = self.dense(mat)
         ctc = nn.log_softmax(dense)
 
-        if self.train:
+        if train:
             # softmax attn
             attn = nn.softmax(attn)
-            attn = UpSample(up_repeat=3)(attn)
+            attn = UpSample(up_repeat=3)(attn, train)
             attn = nn.Conv(features=self.time_steps,
                 kernel_size=(1, 1),
                 strides=1,
@@ -205,13 +204,35 @@ class TinyLPR(nn.Module):
 
 
 if __name__ == '__main__':
-    model = TinyLPR(time_steps=15, n_class=68, n_feat=64, train=True)
+    model = TinyLPR(time_steps=15, n_class=68, n_feat=64)
     key = jax.random.PRNGKey(0)
     # x = jnp.zeros((1, 64, 128, 1))
-    x = jnp.random.rand(1, 96, 192, 1)
+    x = jnp.zeros((8, 96, 192, 1))
     print(model.tabulate(key, x))
 
-    params = model.init(key, x)
-    y = model.apply(params, x)
-    for i in y:
-        print(i.shape)
+    var = model.init(key, x, train=True)
+    params = var['params']
+    batch_stats = var['batch_stats']
+    y, _ = model.apply(var, x, train=True, mutable=["batch_stats"])
+
+    from flax.training import train_state
+    from typing import Any
+    import optax
+ 
+    class TrainState(train_state.TrainState):
+        batch_stats: Any
+
+    state = TrainState.create(
+        apply_fn=model.apply,
+        params=params,
+        batch_stats=batch_stats,
+        tx=optax.adam(1e-3),
+    )
+
+    y, batch_stats = state.apply_fn({
+        'params': state.params,
+        'batch_stats': state.batch_stats
+    }, x, train=True, mutable=['batch_stats'])
+
+    for out in y:
+        print(out.shape)
