@@ -1,7 +1,10 @@
 import os, sys, random, time, glob, math
 
+os.environ['CUDA_VISIBLE_DEVICES']='0'
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+ 
 import jax
-jax.config.update('jax_platform_name', 'cpu')
+# jax.config.update('jax_platform_name', 'cpu')
 import yaml
 import optax
 import jax.numpy as jnp
@@ -49,14 +52,17 @@ def train_step(state: TrainState, batch, opt_state):
     return state, loss_dict, opt_state
 
 
-@jax.jit
-def eval_step(state: TrainState, batch):
+def predict(state: TrainState, batch):
     img, _, label = batch
-    (pred_mask, pred_feats_ctc, pred_ctc) = state.apply_fn({
+    pred_ctc = state.apply_fn({
         'params': state.params,
         'batch_stats': state.batch_stats
         }, img, train=False)
+    return pred_ctc, label
 
+
+def eval_step(state: TrainState, batch):
+    pred_ctc, label = jax.jit(predict)(state, batch)
     label = batch_remove_blank(label)
     pred = batch_ctc_greedy_decoder(pred_ctc)
     acc = jnp.mean(jnp.array([1 if jnp.array_equal(

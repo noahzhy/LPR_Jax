@@ -1,6 +1,6 @@
 import os, sys, random, time, glob, math
 import multiprocessing
-n_map_threads = multiprocessing.cpu_count() * 2
+n_map_threads = multiprocessing.cpu_count()
 
 import jax
 import tqdm
