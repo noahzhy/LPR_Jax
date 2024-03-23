@@ -1,7 +1,7 @@
 # This is a config file for the license plate recognition task
 # img_size: &im [96, 192]
 img_size: &im [64, 128]
-time_steps: &ts 16
+time_steps: &ts 15
 
 # training config
 batch_size: &bs 128
@@ -31,5 +31,6 @@ model:
 
 # loss config
 focal_ctc_loss:
+  blank_id: -1
   alpha: 0.8
   gamma: 3.0

@@ -1,5 +1,6 @@
 import time, timeit
 from time import perf_counter
+from functools import partial
 
 import jax
 import optax
@@ -7,7 +8,7 @@ import jax.numpy as jnp
 
 
 # ctc loss
-@jax.jit
+@partial(jax.jit, static_argnums=(2,))
 def ctc_loss(logits, targets, blank_id=0):
     logits_padding = jnp.zeros(logits.shape[:2])
     labels_padding = jnp.where(targets == blank_id, 1, 0)
@@ -19,7 +20,7 @@ def ctc_loss(logits, targets, blank_id=0):
     ).mean()
 
 
-@jax.jit
+@partial(jax.jit, static_argnums=(2, 3, 4))
 def focal_ctc_loss(logits, targets, blank_id=0, alpha=0.25, gamma=2):
     loss = ctc_loss(logits, targets, blank_id)
     return alpha * (1 - jnp.exp(-loss)) ** gamma * loss
@@ -89,6 +90,8 @@ def dice_bce_test():
 
 
 if __name__ == "__main__":
+    # cpu mode
+    jax.config.update('jax_platform_name', 'cpu')
     print(jax.devices())
 
     dice_bce_test()

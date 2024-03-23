@@ -47,26 +47,26 @@ def resize_image(image, mask, label, size, target_size=(96, 192)):
     return image, mask, label, size
 
 
-def pad_label(label, time_step=15):
+def align_label(label, time_step=15):
     _label = tf.zeros(len(label) * 2 - 1)
     for i in range(len(label)):
         _label = tf.tensor_scatter_nd_update(_label, [[i * 2]], [label[i]])
 
-    return tf.pad(_label, [[time_step - len(_label), 0]], 'CONSTANT')
+    return tf.pad(_label, [[time_step - len(_label), 0]], 'CONSTANT', constant_values=-1)
 
 
 # def pad_label(label, time_step=15):
 #     return tf.pad(label, [[0, time_step - len(label)]], 'CONSTANT')
 
-def pad_mask(mask, time_step=16):
+
+def pad_mask(mask, time_step):
     ''' given mask shape (H, W, T), pad to (H, W, time_step) '''
     return tf.pad(mask, [[0, 0], [0, 0], [time_step - mask.shape[-1], 0]], 'CONSTANT')
 
 
-def pad_image_mask(image, mask, label, size, time_step=16, target_size=(96, 192)):
+def pad_image_mask(image, mask, label, size, time_step=15, target_size=(96, 192)):
     image = tf.image.rgb_to_grayscale(image)
-    label = pad_label(label, time_step-1)
-    mask = pad_mask(mask, time_step)
+    label = align_label(label, time_step)
     return image, mask, label
 
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     batch_size = 8
     # img_size = (64, 128)
     img_size = (96, 192)
-    time_step = 16
+    time_step = 15
     aug = True
 
     # load dict from names file to dict
@@ -115,9 +115,11 @@ if __name__ == "__main__":
     names = {i: name for i, name in enumerate(names)}
     print(names)
 
-    # label = tf.constant([1, 2, 3, 4, 5, 6, 7, 8])
-    # res = pad_label(label, time_step=15)
-    # print(res)
+    label = tf.constant([1, 2, 3, 4, 5, 6, 7])
+    res = align_label(label, time_step=15)
+    print(res)
+
+    quit()
 
     tfrecord_path = "/home/ubuntu/datasets/lpr/val.tfrecord"
     # tfrecord_path = "data/val.tfrecord"
