@@ -1,7 +1,7 @@
 
 import os
 os.environ['CUDA_VISIBLE_DEVICES']='0'
-os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+# os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
  
 import time
 from multiprocessing import Pool
@@ -11,14 +11,8 @@ import jax
 a = np.ones(1000000)
 # print device
 print(jax.devices())
- 
-def f(a):
-    b = jnp.array(a)
-    time.sleep(2)
-    print('Array b has been deleted!')
-    return True
- 
-with Pool(1) as p:
-    res = p.map(f, [(a,)])
- 
-print ('Is jax array deleted successfully?\t{}'.format(res))
+
+import tensorflow as tf
+# gpu check
+print(tf.config.list_physical_devices())
+

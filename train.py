@@ -1,7 +1,4 @@
 import os, sys, random, time, glob, math
-
-os.environ['CUDA_VISIBLE_DEVICES']='0'
-os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
  
 import jax
 # jax.config.update('jax_platform_name', 'cpu')

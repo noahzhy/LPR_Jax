@@ -1,12 +1,13 @@
 import os, sys, random, time, glob, math
 import multiprocessing
-n_map_threads = multiprocessing.cpu_count()
+n_map_threads = multiprocessing.cpu_count() * 2
 
 import jax
 import tqdm
 from PIL import Image
 import jax.numpy as jnp
 import tensorflow as tf
+tf.config.experimental.set_visible_devices([], "GPU")
 
 sys.path.append("./utils")
 from data_aug import *
@@ -36,7 +37,7 @@ def reshape_fn(image, mask, label, size, time_step=15, target_size=(96, 192)):
     return image, mask, label, size
 
 
-def resize_image(image, mask, label, size, time_step=15, target_size=(96, 192)):
+def resize_image(image, mask, label, size, target_size=(96, 192)):
     image = tf.image.resize(
         image, target_size, method=tf.image.ResizeMethod.BILINEAR, antialias=True
     )
@@ -46,8 +47,8 @@ def resize_image(image, mask, label, size, time_step=15, target_size=(96, 192)):
     return image, mask, label, size
 
 
-def pad_label(label, time_step=8):
-    _label = tf.zeros(len(label) * 2 - 1, dtype=tf.int32)
+def pad_label(label, time_step=15):
+    _label = tf.zeros(len(label) * 2 - 1)
     for i in range(len(label)):
         _label = tf.tensor_scatter_nd_update(_label, [[i * 2]], [label[i]])
 
@@ -57,10 +58,15 @@ def pad_label(label, time_step=8):
 # def pad_label(label, time_step=15):
 #     return tf.pad(label, [[0, time_step - len(label)]], 'CONSTANT')
 
+def pad_mask(mask, time_step=16):
+    ''' given mask shape (H, W, T), pad to (H, W, time_step) '''
+    return tf.pad(mask, [[0, 0], [0, 0], [time_step - mask.shape[-1], 0]], 'CONSTANT')
 
-def pad_image_mask(image, mask, label, size, time_step=15, target_size=(96, 192)):
+
+def pad_image_mask(image, mask, label, size, time_step=16, target_size=(96, 192)):
     image = tf.image.rgb_to_grayscale(image)
-    label = pad_label(label, time_step)
+    label = pad_label(label, time_step-1)
+    mask = pad_mask(mask, time_step)
     return image, mask, label
 
 
@@ -88,7 +94,7 @@ def get_data(tfrecord, batch_size=32, data_aug=True, n_map_threads=n_map_threads
 
     ds = ds.map(pad_image_mask, num_parallel_calls=n_map_threads)
 
-    ds = ds.shuffle(2048, reshuffle_each_iteration=True)
+    ds = ds.shuffle(2048, reshuffle_each_iteration=data_aug)
     ds = ds.batch(batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
     return ds, ds_len
 
@@ -96,25 +102,31 @@ def get_data(tfrecord, batch_size=32, data_aug=True, n_map_threads=n_map_threads
 if __name__ == "__main__":
     import tensorflow_datasets as tfds
     key = jax.random.PRNGKey(0)
-    batch_size = 32
+    batch_size = 8
     # img_size = (64, 128)
     img_size = (96, 192)
-    time_step = 15
+    time_step = 16
     aug = True
 
-    label = tf.constant([1, 2, 3, 4, 5, 6, 7, 8])
-    res = pad_label(label, time_step=15)
-    print(res)
+    # load dict from names file to dict
+    with open("data/labels.names", "r") as f:
+        names = f.readlines()
+    names = [name.strip() for name in names]
+    names = {i: name for i, name in enumerate(names)}
+    print(names)
 
-    # tfrecord_path = "/Users/haoyu/Documents/datasets/val.tfrecord"
+    # label = tf.constant([1, 2, 3, 4, 5, 6, 7, 8])
+    # res = pad_label(label, time_step=15)
+    # print(res)
+
+    tfrecord_path = "/home/ubuntu/datasets/lpr/val.tfrecord"
     # tfrecord_path = "data/val.tfrecord"
-    # ds, ds_len = get_data(tfrecord_path, batch_size, aug)
-    # dl = iter(tfds.as_numpy(ds))
+    ds, ds_len = get_data(tfrecord_path, batch_size, aug)
+    dl = tfds.as_numpy(ds)
 
-    # for data in tqdm.tqdm(dl, total=ds_len):
-    #     # data = next(dl)
-    #     img, mask, label = data
-    #     print(img.shape, mask.shape, label.shape)
+    for data in tqdm.tqdm(dl, total=ds_len):
+        img, mask, label = data
+        print(img.shape, mask.shape, label.shape)
 
     #     # save one image as test.jpg
     #     img = img[0] * 255
@@ -122,7 +134,14 @@ if __name__ == "__main__":
     #     img = Image.fromarray(np.uint8(img))
     #     img.save('test.jpg')
 
-    #     print(label[0])
+        print(label[0])
+
+        for i in range(16):
+            print(mask[0][:,:,i])
+            # save as i.png
+            mask_ = mask[0][:,:,i] * 255
+            mask_ = Image.fromarray(np.uint8(mask_))
+            mask_.save(f'{i}.png')
 
     #     # sum the mask to one channel
     #     mask = mask[0] * 255
@@ -130,4 +149,4 @@ if __name__ == "__main__":
     #     # save the mask as test.png
     #     mask = Image.fromarray(np.uint8(mask))
     #     mask.save('test.png')
-    #     break
+        break

@@ -1,9 +1,10 @@
 # This is a config file for the license plate recognition task
-img_size: &im [96, 192]
-time_steps: &ts 15
+# img_size: &im [96, 192]
+img_size: &im [64, 128]
+time_steps: &ts 16
 
 # training config
-batch_size: &bs 24
+batch_size: &bs 128
 lr: 5.e-4
 warmup: 5
 epochs: 100
