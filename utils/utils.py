@@ -63,7 +63,8 @@ def show(image):
 # group same label and remove blank
 def ctc_greedy_decoder(logits, blank=0):
     logits = jnp.argmax(logits, axis=-1)
-    return [int(k) for k, _ in itertools.groupby(logits) if k != blank]
+    # return [int(k) for k, _ in itertools.groupby(logits) if k != blank]
+    return [int(k) for k, _ in itertools.groupby(logits) if k > blank]
 
 
 # batch ctc greedy decoder
@@ -73,7 +74,8 @@ def batch_ctc_greedy_decoder(logits, blank=0):
 
 # remove blank in label list
 def remove_blank(label, blank=0):
-    return [int(k) for k in label if k != blank]
+    # return [int(k) for k in label if k != blank]
+    return [int(k) for k in label if k > blank]
 
 
 # remove blank in batch label

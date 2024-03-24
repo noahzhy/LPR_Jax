@@ -52,7 +52,15 @@ def align_label(label, time_step=15):
     for i in range(len(label)):
         _label = tf.tensor_scatter_nd_update(_label, [[i * 2]], [label[i]])
 
-    return tf.pad(_label, [[time_step - len(_label), 0]], 'CONSTANT', constant_values=-1)
+    if time_step == len(_label):
+        return _label
+
+    # return tf.pad(_label, [[time_step - len(_label), 0]], 'CONSTANT', constant_values=0)
+    # pad 0 to the left and pad -1 only last one
+    # [1, 2, 3, 4, 5] -> [0, 0, 0, 0, 0, 1, 2, 3, 4, 5, -1]
+    T = tf.pad(_label, [[time_step-1 - len(_label), 1]], 'CONSTANT', constant_values=0)
+    T = tf.tensor_scatter_nd_update(T, [[time_step-1]], [-1])
+    return T
 
 
 # def pad_label(label, time_step=15):
@@ -70,6 +78,19 @@ def pad_image_mask(image, mask, label, size, time_step=15, target_size=(96, 192)
     return image, mask, label
 
 
+def random_pad(image, mask, size):
+    H, W = size[0], size[1]
+    h, w = image.shape[0], image.shape[1]
+    pad_w = W - w
+    if pad_w < 0:
+        return image, mask
+    pad_top = tf.random.uniform((), 0, pad_h, dtype=tf.int32)
+    pad_left = tf.random.uniform((), 0, pad_w, dtype=tf.int32)
+    image = tf.pad(image, [[pad_top, pad_h-pad_top], [pad_left, pad_w-pad_left], [0, 0]])
+    mask = tf.pad(mask, [[pad_top, pad_h-pad_top], [pad_left, pad_w-pad_left], [0, 0]])
+    return image, mask
+
+
 def data_augment(image, mask, label, size):
     gamma = np.random.uniform(low=1.0, high=2, size=[1,])
     gain = np.random.uniform(low=0.7, high=1.5, size=[1,])
@@ -78,6 +99,12 @@ def data_augment(image, mask, label, size):
     image = tf.image.random_hue(image, 0.3)
     image = tf.image.random_saturation(image, 0.1, 2.0)
     image = tf.image.random_brightness(image, 0.3)
+    # color inversion
+    if tf.random.uniform(()) > 0.5: image = tf.math.abs(1 - image)
+
+    # random padding image and mask at the same time
+    image, mask = random_pad(image, mask, size)
+
     # clip to [0, 1]
     image = tf.clip_by_value(image, 0, 1)
     return image, mask, label, size
@@ -119,7 +146,7 @@ if __name__ == "__main__":
     res = align_label(label, time_step=15)
     print(res)
 
-    quit()
+    # quit()
 
     tfrecord_path = "/home/ubuntu/datasets/lpr/val.tfrecord"
     # tfrecord_path = "data/val.tfrecord"
@@ -138,12 +165,12 @@ if __name__ == "__main__":
 
         print(label[0])
 
-        for i in range(16):
-            print(mask[0][:,:,i])
-            # save as i.png
-            mask_ = mask[0][:,:,i] * 255
-            mask_ = Image.fromarray(np.uint8(mask_))
-            mask_.save(f'{i}.png')
+        # for i in range(16):
+        #     print(mask[0][:,:,i])
+        #     # save as i.png
+        #     mask_ = mask[0][:,:,i] * 255
+        #     mask_ = Image.fromarray(np.uint8(mask_))
+        #     mask_.save(f'{i}.png')
 
     #     # sum the mask to one channel
     #     mask = mask[0] * 255

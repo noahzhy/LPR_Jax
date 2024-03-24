@@ -84,8 +84,3 @@ def batch_ctc_greedy_decoder(logits, blank=0):
 
 
 print(batch_ctc_greedy_decoder(logits))
-
-
-
-
-

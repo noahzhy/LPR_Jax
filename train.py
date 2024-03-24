@@ -12,7 +12,7 @@ from model.loss import *
 from model.model import TinyLPR
 from model.tfr_dl import get_data
 from utils import batch_ctc_greedy_decoder, batch_remove_blank
-from fit import lr_schedule, fit, TrainState
+from fit import lr_schedule, fit, TrainState, load_ckpt
 
 
 cfg = yaml.safe_load(open("config.yaml"))
@@ -82,6 +82,8 @@ if __name__ == "__main__":
         batch_stats=batch_stats,
         tx=optax.inject_hyperparams(optax.adam)(lr_fn),
     )
+
+    # state = load_ckpt(state, "tmp")
 
     fit(state, train_dl, val_dl,
         train_step=train_step,

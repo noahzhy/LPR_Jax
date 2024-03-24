@@ -21,7 +21,7 @@ def ctc_loss(logits, targets, blank_id=0):
 
 
 @partial(jax.jit, static_argnums=(2, 3, 4))
-def focal_ctc_loss(logits, targets, blank_id=0, alpha=0.25, gamma=2):
+def focal_ctc_loss(logits, targets, blank_id=-1, alpha=0.25, gamma=2):
     loss = ctc_loss(logits, targets, blank_id)
     return alpha * (1 - jnp.exp(-loss)) ** gamma * loss
 
