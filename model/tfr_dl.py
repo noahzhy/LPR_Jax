@@ -1,6 +1,4 @@
 import os, sys, random, time, glob, math
-import multiprocessing
-n_map_threads = multiprocessing.cpu_count() * 2
 
 import jax
 import tqdm
@@ -8,6 +6,7 @@ from PIL import Image
 import jax.numpy as jnp
 import tensorflow as tf
 tf.config.experimental.set_visible_devices([], "GPU")
+n_map_threads = tf.data.experimental.AUTOTUNE
 
 sys.path.append("./utils")
 from data_aug import *
@@ -151,8 +150,9 @@ def get_data(tfrecord, batch_size=32, data_aug=True, n_map_threads=n_map_threads
         ds = ds.map(resize_image_keep_ratio, num_parallel_calls=n_map_threads)
 
     ds = ds.map(pad_image_mask, num_parallel_calls=n_map_threads)
-    ds = ds.shuffle(2048, reshuffle_each_iteration=data_aug).batch(
-        batch_size, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
+    ds = ds.shuffle(4096, reshuffle_each_iteration=data_aug).batch(
+        batch_size, drop_remainder=True, num_parallel_calls=n_map_threads
+    ).prefetch(tf.data.experimental.AUTOTUNE)
     return ds, ds_len
 
 
@@ -160,8 +160,8 @@ if __name__ == "__main__":
     import tensorflow_datasets as tfds
     key = jax.random.PRNGKey(0)
     batch_size = 8
-    # img_size = (64, 128)
-    img_size = (96, 192)
+    img_size = (64, 128)
+    # img_size = (96, 192)
     time_step = 15
     aug = False
 
@@ -178,8 +178,8 @@ if __name__ == "__main__":
 
     # quit()
 
-    # tfrecord_path = "/home/ubuntu/datasets/lpr/val.tfrecord"
-    tfrecord_path = "data/val.tfrecord"
+    tfrecord_path = "/home/ubuntu/datasets/lpr/val.tfrecord"
+    # tfrecord_path = "data/val.tfrecord"
     ds, ds_len = get_data(tfrecord_path, batch_size, aug)
     dl = tfds.as_numpy(ds)
 
@@ -194,6 +194,8 @@ if __name__ == "__main__":
         img.save('test.jpg')
 
         print(label[0])
+        print(label[1])
+        print(label[2])
 
         # for i in range(16):
         #     print(mask[0][:,:,i])

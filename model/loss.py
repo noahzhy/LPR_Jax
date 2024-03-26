@@ -7,6 +7,15 @@ import optax
 import jax.numpy as jnp
 
 
+import time, timeit
+from time import perf_counter
+from functools import partial
+
+import jax
+import optax
+import jax.numpy as jnp
+
+
 # ctc loss
 @partial(jax.jit, static_argnums=(2,))
 def ctc_loss(logits, targets, blank_id=0):
@@ -17,13 +26,14 @@ def ctc_loss(logits, targets, blank_id=0):
         labels=targets,
         logit_paddings=logits_padding,
         label_paddings=labels_padding,
-    ).mean()
+    )
 
 
 @partial(jax.jit, static_argnums=(2, 3, 4))
 def focal_ctc_loss(logits, targets, blank_id=-1, alpha=0.25, gamma=2):
     loss = ctc_loss(logits, targets, blank_id)
-    return alpha * (1 - jnp.exp(-loss)) ** gamma * loss
+    focal_fn = lambda x: alpha * (1 - jnp.exp(-x)) ** gamma * x
+    return jax.vmap(focal_fn)(loss).mean()
 
 
 def focal_ctc_loss_test():

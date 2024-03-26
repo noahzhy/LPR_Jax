@@ -75,10 +75,11 @@ def fit(state, train_ds, test_ds,
             state, loss_dict, opt_state = train_step(state, batch, opt_state)
             lr = opt_state.hyperparams['learning_rate']
             pbar.set_description(f'Epoch {epoch:3d}, lr: {lr:.7f}, loss: {loss_dict["loss"]:.4f}')
-            writer.add_scalar('train/lr', lr, state.step)
 
-            for k, v in loss_dict.items():
-                writer.add_scalar(f'train/{k}', v, state.step)
+            if state.step % 100 == 0:
+                writer.add_scalar('train/lr', lr, state.step)
+                for k, v in loss_dict.items():
+                    writer.add_scalar(f'train/{k}', v, state.step)
 
         if epoch % eval_freq == 0:
             acc = []
