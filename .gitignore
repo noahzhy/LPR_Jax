@@ -1,6 +1,6 @@
 checkpoints/*
-logs/*
-tmp/*
+# logs/*
+# tmp/*
 
 *.png
 *.jpg
