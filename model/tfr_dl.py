@@ -71,7 +71,6 @@ def align_label(label, time_step=15):
     if time_step == len(_label):
         return _label
 
-    # return tf.pad(_label, [[time_step - len(_label), 0]], 'CONSTANT', constant_values=0)
     # pad 0 to the left and pad -1 only last one
     # [1, 2, 3, 4, 5] -> [0, 0, 0, 0, 0, 1, 2, 3, 4, 5, -1]
     T = tf.pad(_label, [[time_step-1 - len(_label), 1]], 'CONSTANT', constant_values=0)
@@ -79,8 +78,8 @@ def align_label(label, time_step=15):
     return T
 
 
-# def pad_label(label, time_step=15):
-#     return tf.pad(label, [[0, time_step - len(label)]], 'CONSTANT')
+def align_label(label, time_step=15):
+    return tf.pad(label, [[0, time_step - len(label)]], 'CONSTANT', constant_values=0)
 
 
 def align_mask(mask, time_step):

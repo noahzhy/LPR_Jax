@@ -83,7 +83,7 @@ if __name__ == "__main__":
         tx=optax.inject_hyperparams(optax.adam)(lr_fn),
     )
 
-    # state = load_ckpt(state, "tmp")
+    state = load_ckpt(state, "tmp")
 
     fit(state, train_dl, val_dl,
         train_step=train_step,
